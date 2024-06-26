@@ -39,14 +39,6 @@ app.use(express.static(path.join(__dirname, 'public', 'static', 'images')));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'home.html'));
-});
-
-app.get('/create-profile', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'create-profile.html'));
-});
-
 app.post('/create-profile', async (req, res) => {
     const {first_name, last_name, college, email, phone_number} = req.body;
     if (first_name.length == 0) {
@@ -111,22 +103,6 @@ app.post('/create-profile', async (req, res) => {
     }
 });
 
-app.get('/simulator', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'simulator.html'));
-})
-
-app.get('/singles-simulator', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'singles-simulator.html'));
-})
-
-app.get('/doubles-simulator', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'doubles-simulator.html'));
-})
-
-app.get('/colleges', async (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'colleges.html'))
-})
-
 app.post('/api/simulator', async (req, res) => {
     try {
         let new_ratings = await simulateMatch(req.body.t1score, req.body.t2score, req.body.t1_ids, req.body.t2_ids);
@@ -139,14 +115,6 @@ app.post('/api/simulator', async (req, res) => {
 
 app.get('/api/get-players', async(req, res) => {
     res.send(await getPlayers());
-})
-
-app.get('/players', async(req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'players.html'))
-})
-
-app.get('/tournaments', async(req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'static', 'tournaments.html'))
 })
 
 app.get('/api/colleges', async(req, res) => {
@@ -218,38 +186,6 @@ app.get('/api/tournaments', async(req, res) => {
         }
     }
 })
-
-// app.post('/api/tournaments/add', async(req, res) => {
-//     try {
-//         let r = await addPlayerToTournament({player_id: req.body.player_id, tournament_id: req.body.tournament_id});
-
-//         if (r == true) {
-//             res.send({'success': true});
-//         } else {
-//             res.send({'success': false});
-//         }
-
-//     } catch (error) {
-//         console.log(error);
-//         res.send({'success': false});
-//     }
-// })
-
-// app.post('/api/tournaments/remove', async(req, res) => {
-//     try {
-//         let r = await removePlayerFromTournament({player_id: req.body.player_id, tournament_id: req.body.tournament_id});
-
-//         if (r == true) {
-//             res.send({'success': true});
-//         } else {
-//             res.send({'success': false});
-//         }
-
-//     } catch (error) {
-//         console.log(error);
-//         res.send({'success': false});
-//     }
-// })
 
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
