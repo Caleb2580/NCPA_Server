@@ -40,66 +40,70 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.post('/create-profile', async (req, res) => {
-    const {first_name, last_name, college, email, phone_number} = req.body;
-    if (first_name.length == 0) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (last_name.length == 0) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (college.length == 0) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (email.length == 0) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (phone_number.length == 0) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    }
+    try {
+        const {first_name, last_name, college, email, phone_number} = req.body;
+        if (first_name.length == 0) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (last_name.length == 0) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (college.length == 0) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (email.length == 0) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (phone_number.length == 0) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        }
 
-    if (first_name.length > 20) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (last_name.length > 30) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (college.length > 100) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (email.length > 50) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    } else if (phone_number.length > 20 || isNaN(phone_number)) {
-        res.send({'success': false, 'error': 'Something went wrong'});
-        return;
-    }
+        if (first_name.length > 20) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (last_name.length > 30) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (college.length > 100) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (email.length > 50) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        } else if (phone_number.length > 20 || isNaN(phone_number)) {
+            res.send({'success': false, 'error': 'Something went wrong'});
+            return;
+        }
 
-    if (colleges.indexOf(college) != -1) {
-        pool.query(`INSERT INTO Player(first_name, last_name, college, email, phone_number) VALUES ("${first_name}", "${last_name}", "${college}", "${email}", "${phone_number}");`).then(r => {
-            res.send({'success': true});
-        }).catch(err => {
-            try {
-                err = err['sqlMessage'].toLowerCase();
-                if (err.includes('duplicate')) {
-                    if (err.includes('phone_number')) {
-                        res.send({'success': false, 'error': 'An account with that phone number already exists'});
-                    } else if (err.includes('email')) {
-                        res.send({'success': false, 'error': 'An account with that email already exists'});
+        if (colleges.indexOf(college) != -1) {
+            pool.query(`INSERT INTO Player(first_name, last_name, college, email, phone_number) VALUES ("${first_name}", "${last_name}", "${college}", "${email}", "${phone_number}");`).then(r => {
+                res.send({'success': true});
+            }).catch(err => {
+                try {
+                    err = err['sqlMessage'].toLowerCase();
+                    if (err.includes('duplicate')) {
+                        if (err.includes('phone_number')) {
+                            res.send({'success': false, 'error': 'An account with that phone number already exists'});
+                        } else if (err.includes('email')) {
+                            res.send({'success': false, 'error': 'An account with that email already exists'});
+                        } else {
+                            res.send({'success': false, 'error': 'Something went wrong'});
+                        }
                     } else {
                         res.send({'success': false, 'error': 'Something went wrong'});
                     }
-                } else {
-                    res.send({'success': false, 'error': 'Something went wrong'});
+                } catch(error) {
+                    console.log(error);
+                    res.send({'success': false, 'error': 'Something went wrong'});;
                 }
-            } catch(error) {
-                console.log(error);
-                res.send({'success': false, 'error': 'Something went wrong'});;
-            }
-        })
-    } else {
-        res.send({'success': false, 'error': 'Please enter a valid college'});
-        return;
+            })
+        } else {
+            res.send({'success': false, 'error': 'Please enter a valid college'});
+            return;
+        }
+    } catch (error) {
+        res.send({'success': false});
     }
 });
 
@@ -114,7 +118,11 @@ app.post('/api/simulator', async (req, res) => {
 })
 
 app.get('/api/get-players', async(req, res) => {
-    res.send(await getPlayers());
+    try {
+        res.send(await getPlayers());
+    } catch (error) {
+        res.send({'success': false});
+    }
 })
 
 app.get('/api/colleges', async(req, res) => {
