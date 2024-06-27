@@ -7,8 +7,6 @@ const fs = require('fs-extra');
 
 require('dotenv').config();
 
-console.log(process.env.MYSQL_LOGIN);
-
 const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
