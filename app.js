@@ -16,18 +16,18 @@ const pool = mysql.createPool({
 }).promise();
 
 const app = express();
-app.use(cors());
+// app.use(cors());
 
-const allowedOrigins = ['https://editor.wix.com', 'https://ncpaofficial.com', 'https://www.ncpaofficial.com'];
-app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    }
-}));
+// const allowedOrigins = ['https://editor.wix.com', 'https://ncpaofficial.com', 'https://www.ncpaofficial.com'];
+// app.use(cors({
+//     origin: function(origin, callback) {
+//         if (!origin || allowedOrigins.includes(origin)) {
+//             callback(null, true);
+//         } else {
+//             callback(new Error('Not allowed by CORS'));
+//         }
+//     }
+// }));
 
 const port = 3000;
 
