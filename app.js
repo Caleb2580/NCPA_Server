@@ -16,7 +16,7 @@ const pool = mysql.createPool({
 }).promise();
 
 const app = express();
-// app.use(cors());
+app.use(cors());
 
 // const allowedOrigins = ['https://editor.wix.com', 'https://ncpaofficial.com', 'https://www.ncpaofficial.com'];
 // app.use(cors({
