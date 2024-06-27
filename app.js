@@ -1111,13 +1111,13 @@ async function updateCollegeRankings() {
 
 
 // Update Rankings
-updateCollegeRankings().then(res => {
-    if (res === true) {
-        console.log('Successfully updated ranks');
-    } else {
-        console.log('Something went wrong when updating ranks')
-    }
-});
+// updateCollegeRankings().then(res => {
+//     if (res === true) {
+//         console.log('Successfully updated ranks');
+//     } else {
+//         console.log('Something went wrong when updating ranks')
+//     }
+// });
 
 // simulateMatches('matches.json', n_times=1);
 
