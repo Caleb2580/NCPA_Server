@@ -1089,25 +1089,25 @@ async function updateCollegeRankings() {
 
 
 
-resetDatabase(true).then(async () => {
-    // // await loadNCPAPlayers('ncpa_players.json');
-    await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
-    await simulateNCPAMatches('ncpa_matches.json', n_times=1);
-});
+// resetDatabase(true).then(async () => {
+//     // // await loadNCPAPlayers('ncpa_players.json');
+//     await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
+//     await simulateNCPAMatches('ncpa_matches.json', n_times=1);
+// });
 
 
 // Rank Tournament Teams
-// resetTournaments(true).then(async() => {
-//     tournament_name = '2024 National Collegiate Pickleball Championship';
-//     await loadNCPATournamentPlayers(tournament_name + '_teamlist.json');
-//     r = await createTournament(tournament_name, location='The Hub San Diego', date='2024-03-15', multiplier=1.5);
-//     if (r == true)
-//         console.log('Success created tournament - ' + tournament_name);
-//     else
-//         console.log('Error creating tournament - ' + tournament_name);
+resetTournaments(true).then(async() => {
+    tournament_name = '2024 National Collegiate Pickleball Championship';
+    await loadNCPATournamentPlayers(tournament_name + '_teamlist.json');
+    r = await createTournament(tournament_name, location='The Hub San Diego', date='2024-03-15', multiplier=1.5);
+    if (r == true)
+        console.log('Success created tournament - ' + tournament_name);
+    else
+        console.log('Error creating tournament - ' + tournament_name);
 
-//     await enterTournamentInfo(tournament_name);
-// });
+    await enterTournamentInfo(tournament_name);
+});
 
 
 // Update Rankings
