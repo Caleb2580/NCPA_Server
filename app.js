@@ -582,7 +582,7 @@ async function resetDatabase(player=true) {
     if (player)
         await pool.query('DELETE FROM Player;');
     await createTeamTypes();
-    console.log('Datbase Reset!');
+    console.log('Database Reset!');
 }
 
 async function resetTournaments(colleges=true) {
@@ -735,7 +735,7 @@ async function setDivision(player_id, division) {
 
 async function simulateNCPAMatches(matches_fp, n_times=1) {
     // Reset Players
-    await resetDatabase(false);
+    // await resetDatabase(false);
 
     let matches = await fs.readJson(matches_fp);
     // matches = matches.slice(850, matches.length);
