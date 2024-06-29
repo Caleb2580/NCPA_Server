@@ -1474,11 +1474,11 @@ async function mergePlayers(n1, n2) {
 //     console.log((await getPlayer(n1)));
 // })
 
-// resetDatabase(true).then(async () => {
-//     // // await loadNCPAPlayers('ncpa_players.json');
-//     await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
-//     await simulateNCPAMatches('ncpa_matches.json', n_times=1);
-// });
+resetDatabase(true).then(async () => {
+    // // await loadNCPAPlayers('ncpa_players.json');
+    await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
+    await simulateNCPAMatches('ncpa_matches.json', n_times=1);
+});
 
 
 // Rank Tournament Teams
