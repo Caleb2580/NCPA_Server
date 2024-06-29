@@ -1420,46 +1420,46 @@ async function mergePlayers(n1, n2) {
             gender = `"${gender}"`;
         }
 
-        // let res = (await pool.query(`
-        //     UPDATE Player SET
-        //         first_name=${f1},
-        //         last_name=${l1},
-        //         college=${college},
-        //         phone_number=${phone_number},
-        //         email=${email},
-        //         gender=${gender},
-        //         division=${division},
-        //         wins=${wins},
-        //         losses=${losses},
-        //         singles_rating=${sr},
-        //         doubles_rating=${dr},
-        //         mixed_doubles_rating=${mdr},
-        //         singles_games_played=${sg},
-        //         doubles_games_played=${dg},
-        //         mixed_doubles_games_played=${mdg}
-        //     WHERE player_id=${p1.player_id}
-        // `))[0];
+        let res = (await pool.query(`
+            UPDATE Player SET
+                first_name=${f1},
+                last_name=${l1},
+                college=${college},
+                phone_number=${phone_number},
+                email=${email},
+                gender=${gender},
+                division=${division},
+                wins=${wins},
+                losses=${losses},
+                singles_rating=${sr},
+                doubles_rating=${dr},
+                mixed_doubles_rating=${mdr},
+                singles_games_played=${sg},
+                doubles_games_played=${dg},
+                mixed_doubles_games_played=${mdg}
+            WHERE player_id=${p1.player_id}
+        `))[0];
 
-        // if (res != null) {
-        //     const queries = [
-        //         `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
-        //         `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
-        //         `DELETE FROM Player WHERE player_id = ${p2.player_id};`
-        //     ];
+        if (res != null) {
+            const queries = [
+                `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
+                `DELETE FROM Player WHERE player_id = ${p2.player_id};`
+            ];
 
-        //     queries.forEach(async(query) => {
-        //         await pool.query(query);
-        //     })
-        //     return true;
-        // } else {
-        //     return false;
-        // }
+            queries.forEach(async(query) => {
+                await pool.query(query);
+            })
+            return true;
+        } else {
+            return false;
+        }
     } catch (error) {
         console.log(error);
     }
