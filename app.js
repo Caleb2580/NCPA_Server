@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const exp = require('constants');
 const fs = require('fs-extra');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 require('dotenv').config();
 
@@ -48,80 +50,139 @@ const team_types = [
 app.use(express.static(path.join(__dirname, 'public', 'static')));
 app.use(express.static(path.join(__dirname, 'public', 'static', 'styles')));
 app.use(express.static(path.join(__dirname, 'public', 'static', 'scripts')));
-app.use(express.static(path.join(__dirname, 'public', 'static', 'images')));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(cookieParser());
 
-app.post('/create-profile', async (req, res) => {
+function authenticate(req, res, next) {
     try {
-        const {first_name, last_name, college, email, phone_number} = req.body;
-        if (first_name.length == 0) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (last_name.length == 0) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (college.length == 0) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (email.length == 0) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (phone_number.length == 0) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
+        const token = req.cookies.jwtToken;
+
+        if (!token) {
+            if (req.method === 'GET') {
+                return res.redirect('/login');
+            } else {
+                return res.send({'success': 'false', 'error': 'authentication failed'});
+            }
         }
 
-        if (first_name.length > 20) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (last_name.length > 30) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (college.length > 100) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (email.length > 50) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        } else if (phone_number.length > 20 || isNaN(phone_number)) {
-            res.send({'success': false, 'error': 'Something went wrong'});
-            return;
-        }
-
-        if (colleges.indexOf(college) != -1) {
-            pool.query(`INSERT INTO Player(first_name, last_name, college, email, phone_number) VALUES ("${first_name}", "${last_name}", "${college}", "${email}", "${phone_number}");`).then(r => {
-                res.send({'success': true});
-            }).catch(err => {
-                try {
-                    err = err['sqlMessage'].toLowerCase();
-                    if (err.includes('duplicate')) {
-                        if (err.includes('phone_number')) {
-                            res.send({'success': false, 'error': 'An account with that phone number already exists'});
-                        } else if (err.includes('email')) {
-                            res.send({'success': false, 'error': 'An account with that email already exists'});
-                        } else {
-                            res.send({'success': false, 'error': 'Something went wrong'});
-                        }
-                    } else {
-                        res.send({'success': false, 'error': 'Something went wrong'});
-                    }
-                } catch(error) {
-                    console.log(error);
-                    res.send({'success': false, 'error': 'Something went wrong'});;
+        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+            if (err) {
+                if (req.method === 'GET') {
+                    return res.redirect('/login');
+                } else {
+                    return res.send({'success': 'false', 'error': 'authentication failed'});
                 }
-            })
-        } else {
-            res.send({'success': false, 'error': 'Please enter a valid college'});
-            return;
-        }
+            }
+            next()
+        })
     } catch (error) {
+        if (req.method === 'GET') {
+            return res.redirect('/login');
+        } else {
+            return res.send({'success': 'false', 'error': 'authentication failed'});
+        }
+    }
+}
+
+// Routes
+
+app.get('/login', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'))
+});
+
+app.post('/login', async(req, res) => {
+    if ('password' in req.body && req.body.password === process.env.ADMIN_PASSWORD) {
+        const token = jwt.sign({'permissions': 'admin'}, process.env.JWT_SECRET, {expiresIn: '1h' });
+        res.cookie('jwtToken', token, {httpOnly: true, maxAge: 3600000});
+        res.send({'success': true});
+    } else {
         res.send({'success': false});
     }
 });
 
-app.post('/api/simulator', async (req, res) => {
+app.get('/admin', authenticate, async(req, res) => {
+    // res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
+    return res.redirect('/merge');
+})
+
+app.get('/merge', authenticate, async(req, res) => {
+    return res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
+})
+
+
+// API
+
+// app.post('/create-profile', async (req, res) => {
+//     try {
+//         const {first_name, last_name, college, email, phone_number} = req.body;
+//         if (first_name.length == 0) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (last_name.length == 0) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (college.length == 0) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (email.length == 0) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (phone_number.length == 0) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         }
+
+//         if (first_name.length > 20) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (last_name.length > 30) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (college.length > 100) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (email.length > 50) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         } else if (phone_number.length > 20 || isNaN(phone_number)) {
+//             res.send({'success': false, 'error': 'Something went wrong'});
+//             return;
+//         }
+
+//         if (colleges.indexOf(college) != -1) {
+//             pool.query(`INSERT INTO Player(first_name, last_name, college, email, phone_number) VALUES ("${first_name}", "${last_name}", "${college}", "${email}", "${phone_number}");`).then(r => {
+//                 res.send({'success': true});
+//             }).catch(err => {
+//                 try {
+//                     err = err['sqlMessage'].toLowerCase();
+//                     if (err.includes('duplicate')) {
+//                         if (err.includes('phone_number')) {
+//                             res.send({'success': false, 'error': 'An account with that phone number already exists'});
+//                         } else if (err.includes('email')) {
+//                             res.send({'success': false, 'error': 'An account with that email already exists'});
+//                         } else {
+//                             res.send({'success': false, 'error': 'Something went wrong'});
+//                         }
+//                     } else {
+//                         res.send({'success': false, 'error': 'Something went wrong'});
+//                     }
+//                 } catch(error) {
+//                     console.log(error);
+//                     res.send({'success': false, 'error': 'Something went wrong'});;
+//                 }
+//             })
+//         } else {
+//             res.send({'success': false, 'error': 'Please enter a valid college'});
+//             return;
+//         }
+//     } catch (error) {
+//         res.send({'success': false});
+//     }
+// });
+
+app.post('/api/simulator', async(req, res) => {
     try {
         let new_ratings = await simulateMatch(req.body.t1score, req.body.t2score, req.body.t1_ids, req.body.t2_ids);
 
@@ -148,64 +209,81 @@ app.get('/api/colleges', async(req, res) => {
     }
 })
 
-app.get('/api/tournaments', async(req, res) => {
-    if (Object.keys(req.query).length == 0) {
-        try {
-            let tournaments = await pool.query('SELECT tournament_id, name, location, date FROM Tournament;');
-            res.send({'success': 'true', 'tournaments': tournaments[0]})
-        } catch (error) {
-            res.send({'success': 'false'})
-            return;
+// app.get('/api/tournaments', async(req, res) => {
+//     if (Object.keys(req.query).length == 0) {
+//         try {
+//             let tournaments = await pool.query('SELECT tournament_id, name, location, date FROM Tournament;');
+//             res.send({'success': 'true', 'tournaments': tournaments[0]})
+//         } catch (error) {
+//             res.send({'success': 'false'})
+//             return;
+//         }
+//     } else {
+//         try {
+//             if ('tournament_id' in req.query) {
+
+//                 let tournament_info = (await pool.query(`
+//                     SELECT tournament_id, name, location, date
+//                     FROM Tournament
+//                     WHERE tournament_id=${req.query.tournament_id}
+//                 `))[0][0];
+
+//                 let players = (await pool.query(`
+//                     SELECT Player.first_name, Player.last_name, Player.singles_rating, Player.doubles_rating
+//                     FROM TournamentPlayer
+//                     JOIN Player ON TournamentPlayer.player_id = Player.player_id
+//                     WHERE tournament_id=${req.query.tournament_id};
+//                 `))[0];
+
+//                 let tournament_teams = (await pool.query(`
+//                     SELECT 
+//                         player1.first_name AS p1_first_name,
+//                         player1.last_name AS p1_last_name, 
+//                         player2.first_name AS p2_first_name, 
+//                         player2.last_name AS p2_last_name,
+//                         team_name,
+//                         TeamType.id AS team_type
+//                     FROM TournamentTeam
+//                     JOIN TournamentPlayer AS TP1 ON TournamentTeam.player1_id = TP1.tournament_player_id
+//                     JOIN Player AS player1 ON TP1.player_id = player1.player_id
+//                     JOIN TournamentPlayer AS TP2 ON TournamentTeam.player2_id = TP2.tournament_player_id
+//                     JOIN Player AS player2 ON TP2.player_id = player2.player_id
+//                     JOIN TeamType ON TournamentTeam.team_type_id = TeamType.id
+//                     WHERE TournamentTeam.tournament_id=${req.query.tournament_id}
+//                 `))[0];
+                
+//                 // let tournament_matches = (await pool.query(`
+//                 //     SELECT
+//                 //         TT1.player1_id
+//                 //     FROM TournamentMatch
+//                 //     JOIN TournamentTeam AS TT1 ON TournamentMatch.team1 = TT1.tournament_team_id
+//                 //     WHERE TournamentMatch.tournament_id=${req.query.tournament_id};
+//                 // `));
+                
+//                 // console.log(tournament_matches);
+                
+//                 res.send({'success': true, 'tournament_id': tournament_info.tournament_id, 'name': tournament_info.name, 'location': tournament_info.location, 'date': tournament_info.date, 'players': players, 'tournament_teams': tournament_teams})
+//             }
+//         } catch (error) {
+//             res.send({'success': false})
+//         }
+//     }
+// })
+
+app.post('/api/merge', authenticate, async(req, res) => {
+    try {
+        console.log(req.body);
+
+        if (req.body.n1 != null && req.body.n2 != null) {
+
+            let r = await mergePlayers(req.body.n1, req.body.n2);
+            
+            return res.send({'success': r});
         }
-    } else {
-        try {
-            if ('tournament_id' in req.query) {
 
-                let tournament_info = (await pool.query(`
-                    SELECT tournament_id, name, location, date
-                    FROM Tournament
-                    WHERE tournament_id=${req.query.tournament_id}
-                `))[0][0];
-
-                let players = (await pool.query(`
-                    SELECT Player.first_name, Player.last_name, Player.singles_rating, Player.doubles_rating
-                    FROM TournamentPlayer
-                    JOIN Player ON TournamentPlayer.player_id = Player.player_id
-                    WHERE tournament_id=${req.query.tournament_id};
-                `))[0];
-
-                let tournament_teams = (await pool.query(`
-                    SELECT 
-                        player1.first_name AS p1_first_name,
-                        player1.last_name AS p1_last_name, 
-                        player2.first_name AS p2_first_name, 
-                        player2.last_name AS p2_last_name,
-                        team_name,
-                        TeamType.id AS team_type
-                    FROM TournamentTeam
-                    JOIN TournamentPlayer AS TP1 ON TournamentTeam.player1_id = TP1.tournament_player_id
-                    JOIN Player AS player1 ON TP1.player_id = player1.player_id
-                    JOIN TournamentPlayer AS TP2 ON TournamentTeam.player2_id = TP2.tournament_player_id
-                    JOIN Player AS player2 ON TP2.player_id = player2.player_id
-                    JOIN TeamType ON TournamentTeam.team_type_id = TeamType.id
-                    WHERE TournamentTeam.tournament_id=${req.query.tournament_id}
-                `))[0];
-                
-                // let tournament_matches = (await pool.query(`
-                //     SELECT
-                //         TT1.player1_id
-                //     FROM TournamentMatch
-                //     JOIN TournamentTeam AS TT1 ON TournamentMatch.team1 = TT1.tournament_team_id
-                //     WHERE TournamentMatch.tournament_id=${req.query.tournament_id};
-                // `));
-                
-                // console.log(tournament_matches);
-                
-                res.send({'success': true, 'tournament_id': tournament_info.tournament_id, 'name': tournament_info.name, 'location': tournament_info.location, 'date': tournament_info.date, 'players': players, 'tournament_teams': tournament_teams})
-            }
-        } catch (error) {
-            res.send({'success': false})
-        }
+        return res.send({'success': false});
+    } catch (error) {
+        return res.send({'success': false});
     }
 })
 
@@ -1230,7 +1308,134 @@ async function updateCollegeRankings() {
     }
 }
 
+async function mergePlayers(n1, n2) {
+    try {
+        f1 = n1.substring(0, n1.indexOf(' '));
+        l1 = n1.substring(n1.lastIndexOf(' ')+1, n1.length);
+        f2 = n2.substring(0, n2.indexOf(' '));
+        l2 = n2.substring(n2.lastIndexOf(' ')+1, n2.length);
+        let p1 = await getPlayer(f1, l1);
+        let p2 = await getPlayer(f2, l2);
 
+        console.log(p1, p2);
+        
+        let sg = p1.singles_games_played + p2.singles_games_played
+        let sr = (p1.singles_rating * (p1.singles_games_played/sg)) + (p2.singles_rating * (p2.singles_games_played/sg));
+        let dg = p1.doubles_games_played + p2.doubles_games_played
+        let dr = p1.doubles_rating;
+        if (dg > 0) {
+            if (p1.doubles_games_played === 0) {
+                dr = p2.doubles_rating;
+            } else if (p2.doubles_games_played === 0) {
+                dr = p1.doubles_rating;
+            } else {
+                dr = (p1.doubles_rating * (p1.doubles_games_played/sg)) + (p2.doubles_rating * (p2.doubles_games_played/sg));
+            }
+        }
+        let mdg = p1.mixed_doubles_games_played + p2.mixed_doubles_games_played
+        let mdr = p1.mixed_doubles_rating;
+        if (mdg > 0) {
+            if (p1.mixed_doubles_games_played === 0) {
+                mdr = p2.mixed_doubles_rating;
+            } else if (p2.mixed_doubles_games_played === 0) {
+                mdr = p1.mixed_doubles_rating;
+            } else {
+                mdr = (p1.mixed_doubles_rating * (p1.mixed_doubles_games_played/sg)) + (p2.mixed_doubles_rating * (p2.mixed_doubles_games_played/sg));
+            }
+        }
+
+        let college = null;
+        if (p1.college != null) {
+            college = p1.college;
+        } else if (p2.college != null) {
+            college = p2.college;
+        }
+
+        let gender = null;
+        if (p1.gender != null) {
+            gender = p1.gender;
+        } else if (p2.gender != null) {
+            gender = p2.gender;
+        }
+
+        let division = null;
+        if (p1.division != null) {
+            division = p1.division;
+        } else if (p2.division != null) {
+            division = p2.division;
+        }
+
+        let email = null;
+        if (p1.email != null) {
+            email = p1.email;
+        } else if (p2.email != null) {
+            email = p2.email;
+        }
+
+        let phone_number = null;
+        if (p1.phone_number != null) {
+            phone_number = p1.phone_number;
+        } else if (p2.phone_number != null) {
+            phone_number = p2.phone_number;
+        }
+
+        let wins = p1.wins + p2.wins;
+        let losses = p1.losses + p2.losses;
+
+        // console.log(sg, sr);
+        // console.log(dg, dr);
+        // console.log(mdg, mdr);
+        // console.log(college, gender, division, email, phone_number, wins, losses);
+
+        let res = (await pool.query(`
+            UPDATE Player SET
+                first_name="${f1}",
+                last_name="${l1}",
+                college="${college}",
+                email="${college}",
+                phone_number="${phone_number}",
+                email="${email}",
+                gender="${gender}",
+                division=${division},
+                wins=${wins},
+                losses=${losses},
+                singles_rating=${sr},
+                doubles_rating=${dr},
+                mixed_doubles_rating=${mdr},
+                singles_games_played=${sg},
+                doubles_games_played=${dg},
+                mixed_doubles_games_played=${mdg}
+            WHERE player_id=${p1.player_id}
+        `))[0];
+
+        if (res != null) {
+            const queries = [
+                `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
+                `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
+                `DELETE FROM Player WHERE player_id = ${p2.player_id};`
+            ];
+
+            queries.forEach(async(query) => {
+                await pool.query(query);
+            })
+            return true;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+// mergePlayers('Lily Egenrieder', 'Lily Egrenieder').then(res => {
+//     console.log(res)
+// })
 
 // resetDatabase(true).then(async () => {
 //     // // await loadNCPAPlayers('ncpa_players.json');

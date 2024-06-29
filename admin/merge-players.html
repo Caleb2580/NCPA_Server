@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Merge Tool</title>
+</head>
+<body>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Lexend Peta';
+        }
+
+        div.main {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        div.main h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 2em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.container input {
+            outline: none;
+            font-family: 'Lexend Peta';
+            font-size: 1em;
+            padding: .5em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.verify {
+            width: 2em;
+            height: 2em;
+            background-color: rgb(250, 50, 50);
+        }
+
+        div.verify.valid {
+            background-color: rgb(100, 170, 30);
+        }
+
+        .main button {
+            font-family: 'Lexend Peta';
+            font-size: 1em;
+            padding: .5em;
+            color: rgb(10, 10, 10);
+            background-color: rgb(250, 250, 250);
+            border: 2px solid rgb(10, 10, 10);
+        }
+
+        .main button:hover {
+            background-color: rgb(230, 230, 230);
+        }
+    </style>
+
+    <div class="main">
+        <h1>MERGE PLAYERS</h1>
+        <div class="container">
+            <h4>Main Player</h5>
+            <input class="player main" type="text">
+            <div class="verify"></div>
+        </div>
+        <div class="container">
+            <h4>Contributor Player</h5>
+            <input class="player contributor" type="text">
+            <div class="verify"></div>
+        </div>
+        <button onclick="merge();">MERGE</button>
+    </div>
+
+
+    <script>
+
+        players = [];
+
+        async function getPlayers() {
+            players = await fetch('/api/get-players').then(res => res.json());
+        }
+
+        async function merge() {
+            let p1 = document.querySelector('input.player.main').value;
+            let p2 = document.querySelector('input.player.contributor').value;
+            
+            await getPlayers();
+
+            let v_counter = 0;
+            for (i in players) {
+                let name = players[i].first_name + ' ' + players[i].last_name;
+                if (name === p1 || name === p2) {
+                    v_counter += 1;
+                }
+            }
+
+            if (v_counter == 2) {
+                console.log('MERGE');
+
+                let res = await fetch('/api/merge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        'n1': p1,
+                        'n2': p2,
+                    })
+                }).then(res => res.json());
+
+                if ('success' in res && res.success === true) {
+                    alert(`Successfully merged ${p1} and ${p2}`);
+                    await getPlayers();
+                    
+                } else {
+                    if ('error' in res && res.error == 'authentication failed') {
+                        location.href = '/login';
+                    } else {
+                        alert('Something went wrong');
+                    }
+                }
+
+            } else {
+                alert('Please make sure both players are valid players');
+            }
+
+            document.querySelectorAll('input.player').forEach(input => {
+                input.dispatchEvent(new Event('input'));
+            })
+            
+        }
+
+        getPlayers();
+
+        document.querySelectorAll('input.player').forEach(input => {
+            input.addEventListener('input', event => {
+                let valid = false;
+                for (i in players) {
+                    let name = players[i].first_name + ' ' + players[i].last_name;
+                    if (name === event.target.value) {
+                        valid = true;
+                        break;
+                    }
+                }
+
+                if (valid) {
+                    event.target.parentElement.querySelector('div.verify').classList.add('valid');
+                } else {
+                    event.target.parentElement.querySelector('div.verify').classList.remove('valid');
+                }
+            })
+        })
+
+    </script>
+</body>
+</html>
