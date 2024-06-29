@@ -421,17 +421,92 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_game
 
         let log = null;
 
-        t1_ids.push(match.t1p1_id);
-        t2_ids.push(match.t2p1_id);
-        if (doubles) {
-            t1_ids.push(match.t1p2_id);
-            t2_ids.push(match.t2p2_id);
+        // t1_ids.push(match.t1p1_id);
+        // t2_ids.push(match.t2p1_id);
+        // if (doubles) {
+        //     t1_ids.push(match.t1p2_id);
+        //     t2_ids.push(match.t2p2_id);
+            
 
+        //     for (let i = 0; i < t1_ids.length; i++) {
+        //         await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+        //             if (res[0][0].last_name == 'Schaunaman') {
+        //                 log = 1;
+        //             }
+        //             t1_rating += res[0][0].doubles_rating;
+        //             if (res[0][0].doubles_games_played >= 5) {
+        //                 eligible_players += 1;
+        //             }
+        //             total_players += 1
+        //         })
+        //     }
+        //     for (let i = 0; i < t2_ids.length; i++) {
+        //         await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+        //             if (res[0][0].last_name == 'Schaunaman') {
+        //                 log = 2;
+        //             }
+        //             t2_rating += res[0][0].doubles_rating;
+        //             if (res[0][0].doubles_games_played >= 5) {
+        //                 eligible_players += 1;
+        //             }
+        //             total_players += 1
+        //         })
+        //     }
+        // } else {
+        //     for (let i = 0; i < t1_ids.length; i++) {
+        //         await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+        //             t1_rating += res[0][0].singles_rating;
+        //             if (res[0][0].singles_games_played >= 5) {
+        //                 eligible_players += 1;
+        //             }
+        //             total_players += 1
+        //         })
+        //     }
+        //     for (let i = 0; i < t2_ids.length; i++) {
+        //         await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+        //             t2_rating += res[0][0].singles_rating;
+        //             if (res[0][0].singles_games_played >= 5) {
+        //                 eligible_players += 1;
+        //             }
+        //             total_players += 1
+        //         })
+        //     }
+        // }
+
+        for (let i = 1; i < 5; i++) {
+            if (match[`t1p${i}_id`] !== null) {
+                t1_ids.push(match[`t1p${i}_id`]);
+            }
+        }
+
+        for (let i = 1; i < 5; i++) {
+            if (match[`t2p${i}_id`] !== null) {
+                t2_ids.push(match[`t2p${i}_id`]);
+            }
+        }
+
+        if (doubles && mixed) {
+            for (let i = 0; i < t1_ids.length; i++) {
+                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                    t1_rating += res[0][0].mixed_doubles_rating;
+                    if (res[0][0].mixed_doubles_games_played >= 5) {
+                        eligible_players += 1;
+                    }
+                    total_players += 1
+                })
+            }
+            for (let i = 0; i < t2_ids.length; i++) {
+                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                    t2_rating += res[0][0].mixed_doubles_rating;
+                    if (res[0][0].mixed_doubles_games_played >= 5) {
+                        eligible_players += 1;
+                    }
+                    total_players += 1
+                })
+            }
+        } else if (doubles) {
             for (let i = 0; i < t1_ids.length; i++) {
                 await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
-                    if (res[0][0].last_name == 'Schaunaman') {
-                        log = 1;
-                    }
                     t1_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -441,9 +516,6 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_game
             }
             for (let i = 0; i < t2_ids.length; i++) {
                 await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
-                    if (res[0][0].last_name == 'Schaunaman') {
-                        log = 2;
-                    }
                     t2_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -614,6 +686,12 @@ async function getPlayers(to_grab=['*']) {  // first_name, last_name, singles_ra
 
 async function getPlayer(first_name, last_name) {
     try {
+        if (first_name.split(' ').length > 1) {
+            first_name = first_name.substring(0, first_name.indexOf(' '));
+        }
+        if (last_name.split(' ').length > 1) {
+            last_name = last_name.substring(last_name.lastIndexOf(' ')+1, last_name.length);
+        }
         let p = await pool.query(`SELECT * FROM Player WHERE first_name="${first_name}" AND last_name="${last_name}"`);
         return p[0][0];
     } catch (error) {
@@ -623,6 +701,12 @@ async function getPlayer(first_name, last_name) {
 
 async function getPlayerID(first_name, last_name) {
     try {
+        if (first_name.split(' ').length > 1) {
+            first_name = first_name.substring(0, first_name.indexOf(' '));
+        }
+        if (last_name.split(' ').length > 1) {
+            last_name = last_name.substring(last_name.lastIndexOf(' ')+1, last_name.length);
+        }
         let p = await pool.query(`SELECT player_id FROM Player WHERE first_name="${first_name}" AND last_name="${last_name}"`);
         return p[0][0].player_id;
     } catch (error) {
@@ -632,23 +716,53 @@ async function getPlayerID(first_name, last_name) {
 
 async function createMatch(t1_ids, t2_ids, team_type) {
     try {
-        if (t1_ids.length == 1) {
-            res = await pool.query(`INSERT INTO \`Match\`(t1p1_id, t2p1_id, team_type) VALUES (${t1_ids[0]}, ${t2_ids[0]}, "${team_type}")`).catch(error => {
-                console.log(error);
-                return null;
-            })
-        } else {
-            res = await pool.query(`INSERT INTO \`Match\`(t1p1_id, t1p2_id, t2p1_id, t2p2_id, team_type) VALUES (${t1_ids[0]}, ${t1_ids[1]}, ${t2_ids[0]}, ${t2_ids[1]}, "${team_type}")`).catch(error => {
-                console.log(error);
-                return null;
-            })
+        let keys = [];
+        let values = [];
+        for (let i = 1; i < t1_ids.length+1; i++) {
+            keys.push(`t1p${i}_id`);
+            values.push(`${t1_ids[i-1]}`);
         }
+        for (let i = 1; i < t2_ids.length+1; i++) {
+            keys.push(`t2p${i}_id`);
+            values.push(`${t2_ids[i-1]}`);
+        }
+
+        // console.log(keys);
+        // console.log(values);
+
+        let query = `INSERT INTO \`Match\`(${keys.join(', ')}, team_type) VALUES (${values.join(', ')}, "${team_type}")`
+
+        res = await pool.query(query).catch(error => {
+            console.log(error);
+            return null;
+        })
+
         let match_id = await pool.query('SELECT LAST_INSERT_ID() AS match_id');
         match_id = match_id[0][0].match_id;
         return match_id;
     } catch(err) {
         return null;
     }
+
+
+    // try {
+    //     if (t1_ids.length == 1) {
+    //         res = await pool.query(`INSERT INTO \`Match\`(t1p1_id, t2p1_id, team_type) VALUES (${t1_ids[0]}, ${t2_ids[0]}, "${team_type}")`).catch(error => {
+    //             console.log(error);
+    //             return null;
+    //         })
+    //     } else {
+    //         res = await pool.query(`INSERT INTO \`Match\`(t1p1_id, t1p2_id, t2p1_id, t2p2_id, team_type) VALUES (${t1_ids[0]}, ${t1_ids[1]}, ${t2_ids[0]}, ${t2_ids[1]}, "${team_type}")`).catch(error => {
+    //             console.log(error);
+    //             return null;
+    //         })
+    //     }
+    //     let match_id = await pool.query('SELECT LAST_INSERT_ID() AS match_id');
+    //     match_id = match_id[0][0].match_id;
+    //     return match_id;
+    // } catch(err) {
+    //     return null;
+    // }
 }
 
 async function simulateMatches(matches_fp, n_times=1) {
@@ -772,10 +886,11 @@ async function simulateNCPAMatches(matches_fp, n_times=1) {
             
             for (let p = 0; p < winning_players.length; p++) {
                 let f_name = winning_players[p].substring(0, winning_players[p].indexOf(' '));
-                let l_name = winning_players[p].substring(winning_players[p].indexOf(' ')+1, winning_players[p].length);
-                await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
-                    ;
-                })
+                let l_name = winning_players[p].substring(winning_players[p].lastIndexOf(' ')+1, winning_players[p].length);
+                // await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
+                //     ;
+                // })
+                await createPlayer({first_name: f_name, last_name: l_name});
                 res = await pool.query(`SELECT * FROM Player WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
                 if (res[0].length > 0) {
                     t1_ids.push(res[0][0].player_id);
@@ -786,14 +901,16 @@ async function simulateNCPAMatches(matches_fp, n_times=1) {
 
             for (let p = 0; p < losing_players.length; p++) {
                 let f_name = losing_players[p].substring(0, losing_players[p].indexOf(' '));
-                let l_name = losing_players[p].substring(losing_players[p].indexOf(' ')+1, losing_players[p].length);
-                await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
-                    ;
-                })
+                let l_name = losing_players[p].substring(losing_players[p].lastIndexOf(' ')+1, losing_players[p].length);
+                // await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
+                //     ;
+                // })
+                await createPlayer({first_name: f_name, last_name: l_name});
                 res = await pool.query(`SELECT * FROM Player WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
                 if (res[0].length > 0) {
                     t2_ids.push(res[0][0].player_id);
                 } else {  // Something went wrong
+                    console.log('Error with', f_name, l_name)
                     continue;
                 }
             }
@@ -848,6 +965,12 @@ async function simulateNCPAMatches(matches_fp, n_times=1) {
 async function createPlayer(info) {
     try {
         if (info.first_name != null && info.last_name != null) {
+            if (info.first_name.split(' ').length > 1) {
+                info.first_name = info.first_name.substring(0, info.first_name.indexOf(' '));
+            }
+            if (info.last_name.split(' ').length > 1) {
+                info.last_name = info.last_name.substring(info.last_name.lastIndexOf(' ')+1, info.last_name.length);
+            }
             let query = 'INSERT INTO Player('
             for (key in info) {
                 query += key + ', ';
