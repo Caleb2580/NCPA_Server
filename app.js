@@ -1322,9 +1322,19 @@ async function mergePlayers(n1, n2) {
         let p1 = await getPlayer(f1, l1);
         let p2 = await getPlayer(f2, l2);
         
-        let sg = p1.singles_games_played + p2.singles_games_played
-        let sr = (p1.singles_rating * (p1.singles_games_played/sg)) + (p2.singles_rating * (p2.singles_games_played/sg));
-        let dg = p1.doubles_games_played + p2.doubles_games_played
+        let sg = p1.singles_games_played + p2.singles_games_played;
+        let sr = p1.singles_rating;
+        if (sg > 0) {
+            if (p1.singles_games_played === 0) {
+                sr = p2.singles_rating;
+            } else if (p2.singles_games_played === 0) {
+                sr = p1.singles_rating;
+            } else {
+                sr = (p1.singles_rating * (p1.singles_games_played/sg)) + (p2.singles_rating * (p2.singles_games_played/sg));
+            }
+        }
+
+        let dg = p1.doubles_games_played + p2.doubles_games_played;
         let dr = p1.doubles_rating;
         if (dg > 0) {
             if (p1.doubles_games_played === 0) {
@@ -1332,10 +1342,11 @@ async function mergePlayers(n1, n2) {
             } else if (p2.doubles_games_played === 0) {
                 dr = p1.doubles_rating;
             } else {
-                dr = (p1.doubles_rating * (p1.doubles_games_played/sg)) + (p2.doubles_rating * (p2.doubles_games_played/sg));
+                dr = (p1.doubles_rating * (p1.doubles_games_played/dg)) + (p2.doubles_rating * (p2.doubles_games_played/dg));
             }
         }
-        let mdg = p1.mixed_doubles_games_played + p2.mixed_doubles_games_played
+
+        let mdg = p1.mixed_doubles_games_played + p2.mixed_doubles_games_played;
         let mdr = p1.mixed_doubles_rating;
         if (mdg > 0) {
             if (p1.mixed_doubles_games_played === 0) {
@@ -1343,7 +1354,7 @@ async function mergePlayers(n1, n2) {
             } else if (p2.mixed_doubles_games_played === 0) {
                 mdr = p1.mixed_doubles_rating;
             } else {
-                mdr = (p1.mixed_doubles_rating * (p1.mixed_doubles_games_played/sg)) + (p2.mixed_doubles_rating * (p2.mixed_doubles_games_played/sg));
+                mdr = (p1.mixed_doubles_rating * (p1.mixed_doubles_games_played/mdg)) + (p2.mixed_doubles_rating * (p2.mixed_doubles_games_played/mdg));
             }
         }
 
@@ -1385,10 +1396,10 @@ async function mergePlayers(n1, n2) {
         let wins = p1.wins + p2.wins;
         let losses = p1.losses + p2.losses;
 
-        // console.log(sg, sr);
-        // console.log(dg, dr);
-        // console.log(mdg, mdr);
-        // console.log(college, gender, division, email, phone_number, wins, losses);
+        console.log(sg, sr);
+        console.log(dg, dr);
+        console.log(mdg, mdr);
+        console.log(college, gender, division, email, phone_number, wins, losses);
 
         if (f1 != null) {
             f1 = `"${f1}"`;
@@ -1409,60 +1420,65 @@ async function mergePlayers(n1, n2) {
             gender = `"${gender}"`;
         }
 
-        let res = (await pool.query(`
-            UPDATE Player SET
-                first_name=${f1},
-                last_name=${l1},
-                college=${college},
-                phone_number=${phone_number},
-                email=${email},
-                gender=${gender},
-                division=${division},
-                wins=${wins},
-                losses=${losses},
-                singles_rating=${sr},
-                doubles_rating=${dr},
-                mixed_doubles_rating=${mdr},
-                singles_games_played=${sg},
-                doubles_games_played=${dg},
-                mixed_doubles_games_played=${mdg}
-            WHERE player_id=${p1.player_id}
-        `))[0];
+        // let res = (await pool.query(`
+        //     UPDATE Player SET
+        //         first_name=${f1},
+        //         last_name=${l1},
+        //         college=${college},
+        //         phone_number=${phone_number},
+        //         email=${email},
+        //         gender=${gender},
+        //         division=${division},
+        //         wins=${wins},
+        //         losses=${losses},
+        //         singles_rating=${sr},
+        //         doubles_rating=${dr},
+        //         mixed_doubles_rating=${mdr},
+        //         singles_games_played=${sg},
+        //         doubles_games_played=${dg},
+        //         mixed_doubles_games_played=${mdg}
+        //     WHERE player_id=${p1.player_id}
+        // `))[0];
 
-        if (res != null) {
-            const queries = [
-                `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
-                `DELETE FROM Player WHERE player_id = ${p2.player_id};`
-            ];
+        // if (res != null) {
+        //     const queries = [
+        //         `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
+        //         `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
+        //         `DELETE FROM Player WHERE player_id = ${p2.player_id};`
+        //     ];
 
-            queries.forEach(async(query) => {
-                await pool.query(query);
-            })
-            return true;
-        } else {
-            return false;
-        }
+        //     queries.forEach(async(query) => {
+        //         await pool.query(query);
+        //     })
+        //     return true;
+        // } else {
+        //     return false;
+        // }
     } catch (error) {
         console.log(error);
     }
 }
 
-// mergePlayers('Lily Egenrieder', 'Lily Egrenieder').then(res => {
+// let n1 = 'Caleb Schaunaman';
+// let n2 = 'Logan Schaunaman';
+
+// mergePlayers(n1, n2).then(res => {
 //     console.log(res)
+// }).then(async() => {
+//     console.log((await getPlayer(n1)));
 // })
 
-// resetDatabase(true).then(async () => {
-//     // // await loadNCPAPlayers('ncpa_players.json');
-//     await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
-//     await simulateNCPAMatches('ncpa_matches.json', n_times=1);
-// });
+resetDatabase(true).then(async () => {
+    // // await loadNCPAPlayers('ncpa_players.json');
+    await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
+    await simulateNCPAMatches('ncpa_matches.json', n_times=1);
+});
 
 
 // Rank Tournament Teams
