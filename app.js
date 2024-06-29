@@ -738,7 +738,13 @@ async function setDivision(player_id, division) {
     }
     try {
         for (p in player_id) {
-            await pool.query(`UPDATE Player SET division=${division} WHERE player_id=${player_id[p]}`);
+            let player = (await pool.query(`SELECT * FROM Player WHERE player_id=${player_id[p]}`))[0][0];
+            if ((player.singles_games_played == 0 && player.doubles_games_played == 0 && player.mixed_doubles_games_played == 0) || division !== player.division) {
+                let rating = division === 1 ? 4.5 : 3.5;
+                await pool.query(`UPDATE Player SET division=${division}, singles_games_played=0, doubles_games_played=0, mixed_doubles_games_played=0, singles_rating=${rating}, doubles_rating=${rating}, mixed_doubles_rating=${rating}, wins=0, losses=0 WHERE player_id=${player_id[p]}`);
+            } else {
+                await pool.query(`UPDATE Player SET division=${division} WHERE player_id=${player_id[p]}`);
+            }
         }
         return true;
     } catch (error) {
