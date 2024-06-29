@@ -563,7 +563,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_game
             }
         }
 
-        if (doubles && mixed) {
+        if (mixed) {
             for (let i = 0; i < t1_ids.length; i++) {
                 await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].mixed_doubles_rating;
@@ -638,13 +638,19 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_game
         //     console.log(t1_change, t2_change);
         // }
 
-        // if (mixed && (t2_ids.indexOf((await getPlayerID('Aidan', 'Gorneau'))) != -1 || t1_ids.indexOf((await getPlayerID('Aidan', 'Gorneau'))) != -1)) {
-        //     console.log('-----------')
-        //     console.log(t2_ids.indexOf((await getPlayerID('Aidan', 'Gorneau'))) != -1)
-        //     console.log(t1_ids, t2_ids);
+        let victory = t1score > t2score ? 1 : 2;
+
+        // if (mixed && (t2_ids.indexOf((await getPlayerID('Conor', 'Burns'))) != -1)) {
+        //     console.log('2', victory, t2_change)
+        // } else if (mixed && t1_ids.indexOf((await getPlayerID('Conor', 'Burns'))) != -1) {
+        //     console.log('1', victory, t1_change);
         // }
 
-        let victory = t1score > t2score ? 1 : 2;
+        if (mixed && (t2_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1)) {
+            console.log('2', victory, t2_change)
+        } else if (mixed && t1_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1) {
+            console.log('1', victory, t1_change);
+        }
 
         for (let i = 0; i < t1_ids.length; i++) {
             if (mixed) {
@@ -950,8 +956,7 @@ async function simulateNCPAMatches(matches_fp, n_times=1) {
     // await resetDatabase(false);
 
     let matches = await fs.readJson(matches_fp);
-    // matches = matches.slice(850, matches.length);
-
+    matches.sort((a, b) => new Date(a.posted) - new Date(b.posted));   // Sort By Date Ascending
     for (let w = 0; w < n_times; w++) {
         for (let i = 0; i < matches.length; i++) {
             // Enter players in
