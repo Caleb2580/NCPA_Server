@@ -1321,8 +1321,6 @@ async function mergePlayers(n1, n2) {
         l2 = n2.substring(n2.lastIndexOf(' ')+1, n2.length);
         let p1 = await getPlayer(f1, l1);
         let p2 = await getPlayer(f2, l2);
-
-        console.log(p1, p2);
         
         let sg = p1.singles_games_played + p2.singles_games_played
         let sr = (p1.singles_rating * (p1.singles_games_played/sg)) + (p2.singles_rating * (p2.singles_games_played/sg));
@@ -1392,15 +1390,33 @@ async function mergePlayers(n1, n2) {
         // console.log(mdg, mdr);
         // console.log(college, gender, division, email, phone_number, wins, losses);
 
+        if (f1 != null) {
+            f1 = `"${f1}"`;
+        }
+        if (l1 != null) {
+            l1 = `"${l1}"`;
+        }
+        if (college != null) {
+            college = `"${college}"`;
+        }
+        if (phone_number != null) {
+            phone_number = `"${phone_number}"`;
+        }
+        if (email != null) {
+            email = `"${email}"`;
+        }
+        if (gender != null) {
+            gender = `"${gender}"`;
+        }
+
         let res = (await pool.query(`
             UPDATE Player SET
-                first_name="${f1}",
-                last_name="${l1}",
-                college="${college}",
-                email="${college}",
-                phone_number="${phone_number}",
-                email="${email}",
-                gender="${gender}",
+                first_name=${f1},
+                last_name=${l1},
+                college=${college},
+                phone_number=${phone_number},
+                email=${email},
+                gender=${gender},
                 division=${division},
                 wins=${wins},
                 losses=${losses},
@@ -1442,11 +1458,11 @@ async function mergePlayers(n1, n2) {
 //     console.log(res)
 // })
 
-// resetDatabase(true).then(async () => {
-//     // // await loadNCPAPlayers('ncpa_players.json');
-//     await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
-//     await simulateNCPAMatches('ncpa_matches.json', n_times=1);
-// });
+resetDatabase(true).then(async () => {
+    // // await loadNCPAPlayers('ncpa_players.json');
+    await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
+    await simulateNCPAMatches('ncpa_matches.json', n_times=1);
+});
 
 
 // Rank Tournament Teams

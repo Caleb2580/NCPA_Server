@@ -116,26 +116,30 @@
             if (v_counter == 2) {
                 console.log('MERGE');
 
-                let res = await fetch('/api/merge', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        'n1': p1,
-                        'n2': p2,
-                    })
-                }).then(res => res.json());
+                let proceed = confirm(`Are you sure you want to merge ${p2} into ${p1}? Once you've done this you cannot undo it.`);
 
-                if ('success' in res && res.success === true) {
-                    alert(`Successfully merged ${p1} and ${p2}`);
-                    await getPlayers();
-                    
-                } else {
-                    if ('error' in res && res.error == 'authentication failed') {
-                        location.href = '/login';
+                if (proceed) {
+                    let res = await fetch('/api/merge', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            'n1': p1,
+                            'n2': p2,
+                        })
+                    }).then(res => res.json());
+
+                    if ('success' in res && res.success === true) {
+                        alert(`Successfully merged ${p1} and ${p2}`);
+                        await getPlayers();
+                        
                     } else {
-                        alert('Something went wrong');
+                        if ('error' in res && res.error == 'authentication failed') {
+                            location.href = '/login';
+                        } else {
+                            alert('Something went wrong');
+                        }
                     }
                 }
 
