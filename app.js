@@ -646,11 +646,11 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_game
         //     console.log('1', victory, t1_change);
         // }
 
-        if (mixed && (t2_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1)) {
-            console.log('2', victory, t2_change)
-        } else if (mixed && t1_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1) {
-            console.log('1', victory, t1_change);
-        }
+        // if (mixed && (t2_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1)) {
+        //     console.log('2', victory, t2_change)
+        // } else if (mixed && t1_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1) {
+        //     console.log('1', victory, t1_change);
+        // }
 
         for (let i = 0; i < t1_ids.length; i++) {
             if (mixed) {
@@ -1442,11 +1442,11 @@ async function mergePlayers(n1, n2) {
 //     console.log(res)
 // })
 
-resetDatabase(true).then(async () => {
-    // // await loadNCPAPlayers('ncpa_players.json');
-    await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
-    await simulateNCPAMatches('ncpa_matches.json', n_times=1);
-});
+// resetDatabase(true).then(async () => {
+//     // // await loadNCPAPlayers('ncpa_players.json');
+//     await loadNCPATournamentPlayers('2024 National Collegiate Pickleball Championship_teamlist.json')
+//     await simulateNCPAMatches('ncpa_matches.json', n_times=1);
+// });
 
 
 // Rank Tournament Teams
