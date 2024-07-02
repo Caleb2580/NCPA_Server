@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Singles Simulator</title>
+    <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="simulator.css">
+</head>
+<body>
+    <div class="nav">
+        <div class="left" onclick="location.href='/'">
+            <!-- <h1>NCPA</h1> -->
+            <img src="ncpa.png" alt="">
+        </div>
+        <div class="right">
+            <a href="/">HOME</a>
+            <p>|</p>
+            <a href="/">ABOUT</a>
+            <p>|</p>
+            <a href="/">NATIONALS</a>
+            <p>|</p>
+            <a href="/">COLLEGIATE TOUR</a>
+            <p>|</p>
+            <a href="/">MERCH</a>
+            <p>|</p>
+            <a href="/colleges">COLLEGES</a>
+            <p>|</p>
+            <a href="/players">PLAYERS</a>
+            <button class="cart-btn"></button>
+            <h1>&#9776;</h1>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="form">
+            <h1>SINGLES SIMULATOR</h1>
+            <h2>Players</h2>
+            <div>
+                <div class="players-div">
+                    <input type="text" class="player1-input" id="player1">
+                    <ul class="player-options one"></ul>
+                </div>
+                <h5>VS</h5>
+                <div class="players-div">
+                    <input type="text" class="player2-input" id="player2">
+                    <ul class="player-options two"></ul>
+                </div>
+            </div>
+            <h2>Ratings</h2>
+            <div>
+                <div class="ratings-start-div">
+                    <h3 class="rating-start one">0.00</h3>
+                    <h5>VS</h5>
+                    <h3 class="rating-start two">0.00</h3>
+                </div>
+            </div>
+            <h2>Score</h2>
+            <div>
+                <div class="score-div">
+                    <input type="text" class="score1-input" id="score1">
+                </div>
+                <h5>-</h5>
+                <div class="score-div">
+                    <input type="text" class="score2-input" id="score2">
+                </div>
+            </div>
+            <button class="simulate-btn" onclick="simulate();">Simulate</button>
+            <h2>New Ratings</h2>
+            <div>
+                <div class="ratings-new-div">
+                    <h3 class="rating-new one">0.00</h3>
+                    <h5>VS</h5>
+                    <h3 class="rating-new two">0.00</h3>
+                </div>
+            </div>
+            <a href="/doubles-simulator">DOUBLES?</a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="inquiries">
+            <div>
+                <h1 class="inquiries">FOR INQUIRIES</h1>
+            </div>
+            <div>
+                <img src="phone.png" alt="">
+                <h1>(760)-685-4146</h1>
+            </div>
+            <div>
+                <img src="email.png" alt="">
+                <a href="mailto:noahsuemnick@ncpaofficial.com">noahsuemnick@ncpaofficial.com</a>
+            </div>
+        </div>
+        <div class="ncpa">
+            <h1>NCPA</h1>
+        </div>
+        <div class="social-media">
+            <div class="ims">
+                <img src="facebook.webp" alt="">
+                <img src="instagram.webp" alt="">
+                <img src="x.webp" alt="">
+            </div>
+            <h1><span>Follow us</span><span>@NCPAPICKLEBALL</span></h1>
+        </div>
+    </div>
+</body>
+<script src="singles-simulator.js"></script>
+</html>

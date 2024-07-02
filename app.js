@@ -7,6 +7,7 @@ const fs = require('fs-extra');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const multer = require('multer');
 
 require('dotenv').config();
 
@@ -17,27 +18,21 @@ const pool = mysql.createPool({
     database: 'NCPA'
 }).promise();
 
+// Reading files
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+});
+const upload = multer({storage: storage})
+
 const app = express();
 app.use(cors());
 
-// const allowedOrigins = ['https://editor.wix.com', 'https://ncpaofficial.com', 'https://www.ncpaofficial.com'];
-// app.use(cors({
-//     origin: function(origin, callback) {
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error('Not allowed by CORS'));
-//         }
-//     }
-// }));
-
 const port = 3000;
-
-const colleges = [
-    'Texas Tech University',
-    'Texas A&M University',
-    'University of Texas (Austin)'
-]
 
 const team_types = [
     'Mens Singles',
@@ -103,14 +98,41 @@ app.post('/login', async(req, res) => {
 });
 
 app.get('/admin', authenticate, async(req, res) => {
-    // res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
-    return res.redirect('/merge');
+    res.sendFile(path.join(__dirname, 'admin', 'admin.html'))
 })
 
-app.get('/merge', authenticate, async(req, res) => {
+app.get('/merge-players', authenticate, async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
 })
 
+app.get('/upload-tournament', authenticate, async(req, res) => {
+    return res.sendFile(path.join(__dirname, 'admin', 'upload-tournament.html'))
+})
+
+app.get('/reset-database', authenticate, async(req, res) => {
+    return res.sendFile(path.join(__dirname, 'admin', 'reset-database.html'));
+})
+
+app.get('/get-admin-tools', authenticate, async(req, res) => {
+    filesR = await fs.readdir(path.join(__dirname, 'admin'));
+
+    names = [];
+    
+    for (i in filesR) {
+        if (filesR[i].includes('.html')) {
+            let name = filesR[i].substring(0, filesR[i].length-5);
+            if (name !== 'admin') {
+                names.push(name);
+            }
+        }
+    }
+
+    res.send({'success': true, 'tools': names});
+})
+
+app.get('/ss', authenticate, async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'singles-simulator.html'));
+})
 
 // API
 
@@ -287,6 +309,51 @@ app.post('/api/merge', authenticate, async(req, res) => {
     }
 })
 
+app.post('/api/upload-tournament', authenticate, upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.send({'success': false, 'error': 'No file uploaded'});
+        }
+
+        const info = await fs.readJson(req.file.path);
+
+        if (req.body.name.length == 0 || req.body.date.length != 10) {
+            return res.send({'success': false})
+        }
+
+        const r = await enterAllTournamentInfo(req.body.name, req.body.location, req.body.date, req.body.multiplier, info);
+        
+        fs.unlink(req.file.path, (err) => {
+            if (err) {
+                console.log('Error deleting file: ', err);
+            }
+        })
+
+        if (r == null) {
+            return res.send({'success': true});
+        } else {
+            return res.send({'success': false, 'error': r});
+        }
+    } catch (error) {
+        console.error(error);
+        return res.send({'success': false, 'error': 'An error occurred while uploading the file'});
+    }
+});
+
+app.post('/api/reset-database', authenticate, async(req, res) => {
+    console.log('RESETTING');
+
+    let r = await resetDatabase(true);
+
+    let r2 = await resetTournaments(true);
+
+    if (r === true && r2 === true) {
+        return res.send({'success': true});
+    }
+
+    return res.send({'success': false});
+})
+
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });
@@ -298,38 +365,21 @@ function calculatePWW(winner_rating, loser_rating, k=3) {
 }
 
 async function calculateRatingChange(t1score, t2score, t1_rating, t2_rating, multi, log=false) {
-    // let t1_change = multi*(t1score/(t1score + t2score) - t1_expected);
-    // let t2_change = multi*(t2score/(t1score + t2score) - t2_expected);
-
-    // t1_change = (t1_change < 0 != t1score < t2score) ? t1_change/5 : t1_change;
-    // t2_change = (t2_change < 0 != t2score < t1score) ? t2_change/5 : t2_change;
 
     let t1_multi = (t1score > t2score ? 1 : -1);
 
     let pww = 0;
-    
-    // if (t1_multi == 1) {
-    //     pww = calculatePWW(t1_rating, t2_rating);
-    // } else {
-    //     pww = calculatePWW(t2_rating, t1_rating);
-    // }
-
-    // score_dif = .02 * (Math.abs(t1score - t2score));
-    // let pid = (1-pww) * multi;
-
-    // let t1_change = (pid + score_dif)*t1_multi;
-    // let t2_change = (pid + score_dif)* (-1 * t1_multi);
 
     let score_dif1 = 0;
     let score_dif2 = 0;
     if (t1_multi == 1) {
         pww = calculatePWW(t1_rating, t2_rating);
-        score_dif1 = (multi*(1-pww)) * (t1score / (t1score + t2score) - pww);
-        score_dif2 = (multi*(1 - pww)) * (t2score / (t1score + t2score) - (1 - pww));
+        score_dif1 = (2*multi*(1-pww)) * (t1score / (t1score + t2score) - pww);
+        score_dif2 = (2*multi*(1 - pww)) * (t2score / (t1score + t2score) - (1 - pww));
     } else {
         pww = calculatePWW(t2_rating, t1_rating);
-        score_dif1 = (multi*(1 - pww)) * (t1score / (t1score + t2score) - (1 - pww));
-        score_dif2 = (multi*(1 - pww)) * ((t2score / (t1score + t2score)) - pww);
+        score_dif1 = (2*multi*(1 - pww)) * (t1score / (t1score + t2score) - (1 - pww));
+        score_dif2 = (2*multi*(1 - pww)) * ((t2score / (t1score + t2score)) - pww);
     }
 
     // console.log(score_dif1, score_dif2);
@@ -355,7 +405,10 @@ async function calculateRatingChange(t1score, t2score, t1_rating, t2_rating, mul
 //     exit();
 // })
 
-async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.1, total_games=25, multi=.2) {
+
+// min=.3, total_games=5, multi=.2
+
+async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_games=10, multi=.4) {
     try {
         t1_rating = 0;
         t2_rating = 0;
@@ -474,7 +527,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.1, total_gam
     return null;
 }
 
-async function updateMatchDetails(match_id, t1score, t2score, min=.1, total_games=25, multi=.2) {
+async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_games=10, multi=.4) {
     try {
         await pool.query(`UPDATE \`Match\` SET t1score = ${t1score}, t2score = ${t2score} WHERE match_id = ${match_id}`).catch(err => {
             console.log(err)
@@ -753,6 +806,7 @@ async function resetDatabase(player=true) {
         await pool.query('DELETE FROM Player;');
     await createTeamTypes();
     console.log('Database Reset!');
+    return true;
 }
 
 async function resetTournaments(colleges=true) {
@@ -761,6 +815,8 @@ async function resetTournaments(colleges=true) {
         await pool.query('DELETE FROM College;');
     }
     await pool.query('DELETE FROM Tournament;');
+    console.log('Tournaments reset');
+    return true;
 }
 
 async function getPlayers(to_grab=['*']) {  // first_name, last_name, singles_rating, games_played
@@ -951,11 +1007,15 @@ async function setDivision(player_id, division) {
     }
 }
 
-async function simulateNCPAMatches(matches_fp, n_times=1) {
+async function simulateNCPAMatches(matches_fp, n_times=1, file = false) {
     // Reset Players
     // await resetDatabase(false);
-
-    let matches = await fs.readJson(matches_fp);
+    let matches = []
+    if (file) {
+        matches = matches_fp;
+    } else {
+        matches = await fs.readJson(matches_fp);
+    }
     matches.sort((a, b) => new Date(a.posted) - new Date(b.posted));   // Sort By Date Ascending
     for (let w = 0; w < n_times; w++) {
         for (let i = 0; i < matches.length; i++) {
@@ -1038,10 +1098,11 @@ async function simulateNCPAMatches(matches_fp, n_times=1) {
         }
     }
 
-    let players = await getPlayers(['first_name', 'last_name', 'singles_rating', 'doubles_rating'])
+    // let players = await getPlayers(['first_name', 'last_name', 'singles_rating', 'doubles_rating'])
 
     // console.log(players);
     console.log('DONE!');
+    return true;
 
 }
 
@@ -1119,8 +1180,14 @@ async function loadNCPAPlayers(players_fp) {
     console.log('NCPA Players Loaded!');
 }
 
-async function loadNCPATournamentPlayers(teams_fp) {
-    let teams = await fs.readJson(teams_fp);
+async function loadNCPATournamentPlayers(teams_fp, file=false) {
+
+    let teams = {}
+    if (file == true) {
+        teams = teams_fp
+    } else {
+        teams = await fs.readJson(teams_fp);
+    }
 
     for (let team in teams) {
         await createCollege(team);
@@ -1136,13 +1203,15 @@ async function loadNCPATournamentPlayers(teams_fp) {
                 try {
                     r = (await pool.query(`UPDATE Player SET college="${team}" WHERE first_name="${first_name}" AND last_name="${player.last_name}"`));
                 } catch (error) {
-                    console.log("Error updating " + first_name + ' ' + last_name)
+                    console.log("Error updating " + first_name + ' ' + last_name);
+                    return false;
                 }
             }
         }
     }
 
     console.log('NCPA Players Loaded!');
+    return true;
 }
 
 async function createTournament(tournament_name, location=null, date=null, multiplier=1) {
@@ -1155,7 +1224,7 @@ async function createTournament(tournament_name, location=null, date=null, multi
     }
 }
 
-async function enterTournamentInfo(tournament_name) {
+async function enterTournamentInfo(tournament_name, file=null) {
     try {
         let tournament_info = {};
         try {
@@ -1164,7 +1233,12 @@ async function enterTournamentInfo(tournament_name) {
             console.log('Tournament is not a valid tournament');
             return false;
         }
-        rounds = await fs.readJson(tournament_name + '.json');
+        let rounds = {};
+        if (file === null) {
+            rounds = await fs.readJson(tournament_name + '.json');
+        } else {
+            rounds = file;
+        }
         let team_points = {};
 
         let errors = 0;
@@ -1313,6 +1387,42 @@ async function updateCollegeRankings() {
     }
 }
 
+async function enterAllTournamentInfo(tournament_name, location, date, multiplier, info) {
+
+    console.log('Creating Tournament...');
+    let r = await createTournament(tournament_name, location, date, multiplier);
+    if (r == true) {
+        console.log('Successfully Created Tournament', tournament_name);
+    } else {return 'Error Creating Tournament (Tournament Name might already exist)'};
+
+    console.log('Entering Players...')
+    r = await loadNCPATournamentPlayers(info.teamlist, true);
+    if (r == true) {
+        console.log('Successfully Entered Players');
+    } else {return 'Error entering players, please check your info file'}
+
+    console.log('Simulating Matches...')
+    r = await simulateNCPAMatches(info.scores, 1, true);
+    if (r == true) {
+        console.log('Successfully Simulated Matches');
+    } else {return 'Error simulating matches, please check your info file'}
+
+    console.log('Entering tournament placements...');
+    r = await enterTournamentInfo(tournament_name, info['brackets'])
+    if (r == true) {
+        ;
+    } else {return 'Error entering in tournament placements, please check your info file.'};
+
+    console.log('Updating college rankings...');
+    r = await updateCollegeRankings();
+    if (r == true) {
+        console.log('Successfully updated college rankings')
+    } else {return 'Error updating college rankings'};
+
+
+    return null;
+}
+
 async function mergePlayers(n1, n2) {
     try {
         f1 = n1.substring(0, n1.indexOf(' '));
@@ -1396,10 +1506,10 @@ async function mergePlayers(n1, n2) {
         let wins = p1.wins + p2.wins;
         let losses = p1.losses + p2.losses;
 
-        console.log(sg, sr);
-        console.log(dg, dr);
-        console.log(mdg, mdr);
-        console.log(college, gender, division, email, phone_number, wins, losses);
+        // console.log(sg, sr);
+        // console.log(dg, dr);
+        // console.log(mdg, mdr);
+        // console.log(college, gender, division, email, phone_number, wins, losses);
 
         if (f1 != null) {
             f1 = `"${f1}"`;
@@ -1440,7 +1550,7 @@ async function mergePlayers(n1, n2) {
             WHERE player_id=${p1.player_id}
         `))[0];
 
-        if (res != null) {
+        if (true) {
             const queries = [
                 `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
                 `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,

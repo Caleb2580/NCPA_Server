@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Upload Tournament</title>
+</head>
+<body>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Lexend Peta';
+            font-size: 16px;
+        }
+
+        div.loading {
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background-color: rgba(0, 0, 0, .5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        div.loading.hide {
+            display: none;
+        }
+
+        .ring
+        {
+        position:absolute;
+        top:50%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        width:150px;
+        height:150px;
+        background:transparent;
+        border:3px solid #3c3c3c;
+        border-radius:50%;
+        text-align:center;
+        line-height:150px;
+        font-family:sans-serif;
+        font-size:20px;
+        color: rgb(250, 250, 250);
+        letter-spacing:4px;
+        text-transform:uppercase;
+        text-shadow:0 0 10px rgb(250, 250, 250);
+        box-shadow:0 0 20px rgba(0,0,0,.5);
+        }
+        .ring:before
+        {
+        content:'';
+        position:absolute;
+        top:-3px;
+        left:-3px;
+        width:100%;
+        height:100%;
+        border:3px solid transparent;
+        border-top:3px solid rgb(250, 250, 250);
+        border-right:3px solid rgb(250, 250, 250);
+        border-radius:50%;
+        animation:animateC 2s linear infinite;
+        }
+        .ring span
+        {
+        display:block;
+        position:absolute;
+        top:calc(50% - 2px);
+        left:50%;
+        width:50%;
+        height:4px;
+        background:transparent;
+        transform-origin:left;
+        animation:animate 2s linear infinite;
+        }
+        .ring span:before
+        {
+        content:'';
+        position:absolute;
+        width:16px;
+        height:16px;
+        border-radius:50%;
+        background: rgb(250, 250, 250);
+        top:-6px;
+        right:-8px;
+        box-shadow:0 0 20px  rgb(250, 250, 250);
+        }
+        @keyframes animateC
+        {
+        0%
+        {
+            transform:rotate(0deg);
+        }
+        100%
+        {
+            transform:rotate(360deg);
+        }
+        }
+        @keyframes animate
+        {
+        0%
+        {
+            transform:rotate(45deg);
+        }
+        100%
+        {
+            transform:rotate(405deg);
+        }
+        }
+
+        div.main {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        div.main h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 2em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.main h4 {
+            padding: 0;
+            margin: 0;
+        }
+
+        div.container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            color: rgb(10, 10, 10);
+            text-align: center;
+        }
+
+        div.container input {
+            outline: none;
+            font-family: 'Lexend Peta';
+            font-size: 1em;
+            padding: .5em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.container.date input {
+            width: 2em;
+            text-align: center;
+        }
+
+        div.container.date input.year {
+            width: 4em;
+            text-align: center;
+        }
+
+        div.container.file {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        div.container.file .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1em;
+        }
+
+        div.container.file input[type="file"] {
+            display: none;
+        }
+
+        div.container.file .file-upload-label {
+            font-family: 'Lexend Peta';
+            font-size: .8em;
+            padding: .5em;
+            color: rgb(10, 10, 10);
+            background-color: rgb(250, 250, 250);
+            border: .1em solid rgb(10, 10, 10);
+            cursor: pointer;
+            border-radius: 20px;
+        }
+
+        div.container.file .file-upload-label:hover {
+            background-color: rgb(230, 230, 230);
+        }
+
+        div.container.file .file-chosen {
+            white-space: nowrap;
+            font-size: .8em;
+        }
+
+        .main button {
+            font-family: 'Lexend Peta';
+            font-size: 1em;
+            padding: .5em;
+            color: rgb(10, 10, 10);
+            background-color: rgb(250, 250, 250);
+            border: .15em solid rgb(10, 10, 10);
+            cursor: pointer;
+            transition: .3s ease-in-out;
+        }
+
+        .main button:hover {
+            background-color: rgb(230, 230, 230);
+        }
+
+        @media screen and (max-width: 800px) {
+            .main {
+                font-size: .7em;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .main {
+                font-size: .6em;
+            }
+        }
+
+        @media screen and (max-width: 450px) {
+            .main {
+                font-size: .4em;
+            }
+        }
+    </style>
+
+    <div class="loading hide">
+        <div class="ring">Loading
+            <span></span>
+        </div>
+    </div>
+
+    <div class="main">
+        <h1>UPLOAD TOURNAMENT</h1>
+        <div class="container">
+            <h4>Tournament Name</h5>
+            <input class="name" type="text">
+        </div>
+        <div class="container date">
+            <h4>Date(MM-DD-YYYY)</h5>
+            <input class="month" type="text" placeholder="MM" maxlength="2">
+            <h5>-</h5>
+            <input class="day" type="text" placeholder="DD" maxlength="2">
+            <h5>-</h5>
+            <input class="year" type="text" placeholder="YYYY" maxlength="4">
+        </div>
+        <div class="container">
+            <h4>Location</h5>
+            <input class="location" type="text">
+        </div>
+        <div class="container file">
+            <h4>Info File</h5>
+            <div class="file-input-wrapper">
+                <input class="file" type="file" id="file-upload">
+                <label for="file-upload" class="file-upload-label">Choose File</label>
+                <span class="file-chosen">No file chosen</span>
+            </div>
+        </div>
+        <button onclick="upload();">UPLOAD</button>
+    </div>
+
+
+    <script>
+        async function upload() {
+            let name = document.querySelector('input.name').value;
+            let month = document.querySelector('input.month').value;
+            let day = document.querySelector('input.day').value;
+            let year = document.querySelector('input.year').value;
+            let location = document.querySelector('input.location').value;
+            let file = document.querySelector('input.file');
+
+            // if (name.length === 0) {
+            //     alert('Please enter a tournament name');
+            //     return;
+            // }
+            // if (isNaN(month) || month.length !== 2 || parseInt(month) < 1 || parseInt(month) > 12) {
+            //     alert('Please enter a valid month (MM)');
+            //     return;
+            // }
+            // if (isNaN(day) || day.length !== 2 || parseInt(day) < 1 || parseInt(day) > 31) {
+            //     alert('Please enter a valid day (DD)');
+            //     return;
+            // }
+            // if (isNaN(year) || year.length !== 4 || parseInt(year) < 1900 || parseInt(year) > 2200) {
+            //     alert('Please enter a valid year (YYYY)');
+            //     return;
+            // }
+            if (file.files.length == 0) {
+                alert('Please attach an info file');
+            }
+            if (file.files.length > 1) {
+                alert('Only one info file is allowed');
+            }
+
+            let formData = new FormData();
+            formData.append('name', name);
+            formData.append('date', `${year}-${month}-${day}`);
+            formData.append('location', location);
+            formData.append('file', file.files[0]);
+
+            document.querySelector('div.loading').classList.remove('hide');
+
+            let res = await fetch('/api/upload-tournament', {
+                method: 'POST',
+                body: formData
+            }).then(res => res.json());
+
+            document.querySelector('div.loading').classList.add('hide');
+
+            if ('success' in res && res.success === true) {
+                alert(`Successfully uploaded tournament`);
+            } else {
+                if ('error' in res) {
+                    if (res.error == 'authentication failed') {
+                        location.href = '/login';
+                    } else {
+                        alert(res.error)
+                    }
+                } else {
+                    alert('Something went wrong');
+                }
+            }
+            
+
+
+        }
+
+
+        document.querySelectorAll('div.date input').forEach(input => {
+            input.addEventListener('keydown', event => {
+                if (isNaN(event.key) && event.key !== 'Backspace' && event.key !== 'Delete') {
+                    event.preventDefault();
+                }
+            })
+        })
+
+        document.querySelector('input[type="file"]').addEventListener('change', function(e) {
+            var fileName = e.target.files[0] ? e.target.files[0].name : "No file chosen";
+            document.querySelector('.file-chosen').textContent = fileName;
+        });
+    </script>
+</body>
+</html>

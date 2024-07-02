@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Reset Database</title>
+</head>
+<body>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: 'Lexend Peta';
+            font-size: 16px;
+        }
+
+        div.main {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 1em;
+            transition: ease-in-out .3s;
+        }
+
+        div.main h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 2em;
+            color: rgb(10, 10, 10);
+        }
+
+        div.container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1em;
+            color: rgb(10, 10, 10);
+        }
+
+
+        .main button {
+            font-family: 'Lexend Peta';
+            font-size: 1em;
+            padding: .5em;
+            font-weight: 600;
+            color: rgb(250, 250, 250);
+            background-color: rgb(223, 37, 37);
+            border: .2em solid rgb(223, 37, 37);
+            cursor: pointer;
+            transition: .3s ease-in-out;
+        }
+
+        .main button:hover {
+            background-color: rgb(250, 250, 250);
+            color: rgb(223, 37, 37);
+        }
+
+        @media screen and (max-width: 800px) {
+            .main {
+                font-size: .7em;
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .main {
+                font-size: .6em;
+            }
+        }
+
+        @media screen and (max-width: 450px) {
+            .main {
+                font-size: .4em;
+            }
+        }
+    </style>
+
+    <div class="main">
+        <div class="container">
+            <button onclick="reset()">RESET DATABASE</button>
+        </div>
+    </div>
+
+
+    <script>
+        async function reset() {
+
+            let conf = confirm('Are you sure you want to reset everything. Once this is done it CANNOT be undone!');
+
+            if (conf !== true) {
+                return;
+            }
+
+            let r = await fetch('/api/reset-database', {
+                method: 'POST'
+            }).then(res => res.json());
+
+            if ('success' in r && r.success === true) {
+                alert('Successfully reset database');
+            } else {
+                alert('Something went wrong');
+            }
+        }
+
+        document.querySelector('.main button').addEventListener('mouseover', () => {
+            document.querySelector('.main').style.backgroundColor = 'rgb(250, 75, 75)';
+        })
+
+        document.querySelector('.main button').addEventListener('mouseout', () => {
+            document.querySelector('.main').style.backgroundColor = 'rgb(250, 250, 250)';
+        })
+    </script>
+</body>
+</html>

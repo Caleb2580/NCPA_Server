@@ -1,0 +1,190 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Lexend Peta';
+    font-weight: 400;
+    overflow-x: hidden;
+    z-index: -5;
+}
+
+
+.main {
+    min-height: calc(100% - 100px);
+    background-color: rgb(100, 100, 100);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.main div.form {
+    width: 700px;
+    height: auto;
+    background-color: rgb(250, 250, 250);
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, .5);
+    margin: 4em 0;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+}
+
+div.form div {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2em;
+}
+
+div.form h1 {
+    margin: 0;
+    padding: 0;
+}
+
+div.form h2 {
+    margin: 0;
+    padding: 0;
+    font-size: 1em;
+    text-align: center;
+}
+
+div.form a {
+    text-decoration: underline;
+    font-size: .8em;
+    color: rgb(10, 10, 10);
+    font-weight: 800;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+
+div.form div.players-div {
+    width: 250px;
+    flex-direction: column;
+    position: relative;
+    border: 2px solid rgb(10, 10, 10);
+    border-radius: 15px;
+    gap: 0;
+}
+
+div.form div.players-div h5 {
+    margin: 0;
+    padding: 0;
+}
+
+div.players-div input {
+    margin: 0;
+    padding: .5rem;
+    width: calc(100% - 2rem);
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: rgb(10, 10, 10);
+    font-family: 'Lexend Peta';
+    font-size: .9em;
+    font-weight: 600;
+    text-align: center;
+}
+
+div.players-div ul {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 15px 15px rgba(0, 0, 0, .5);
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    display: none;
+    z-index: 5;
+}
+
+div.players-div ul li {
+    margin: .5em 0;
+    font-size: .8em;
+    font-weight: 600;
+    display: none;
+    cursor: pointer;
+    background-color: rgb(250, 250, 250);
+    text-align: center;
+}
+
+div.players-div ul li.show {
+    display: block;
+}
+
+div.players-div ul.show {
+    display: block;
+}
+
+div.ratings-start-div h3.rating-start {
+    color: rgb(150, 150, 150);
+    margin: 0;
+    padding: 0;
+}
+
+div.ratings-start-div h3.rating-start.done {
+    color: rgb(10, 10, 10);
+}
+
+div.form div.score-div {
+    width: 75px;
+    flex-direction: column;
+    position: relative;
+    border: 2px solid rgb(10, 10, 10);
+    border-radius: 15px;
+}
+
+div.score-div input {
+    margin: 0;
+    padding: .5rem;
+    width: calc(100% - 2rem);
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: rgb(10, 10, 10);
+    font-family: 'Lexend Peta';
+    font-size: .9em;
+    text-align: center;
+    font-weight: 600;
+}
+
+.simulate-btn {
+    font-family: 'Lexend Peta';
+    font-size: 1em;
+    background-color: rgb(10, 10, 10);
+    padding: .75em 1.5em;
+    color: rgb(250, 250, 250);
+    border: 5px solid rgb(10, 10, 10);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: ease-in-out .3s;
+}
+
+.simulate-btn:hover {
+    background-color: rgb(250, 250, 250);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, .5);
+    color: rgb(10, 10, 10);
+}
+
+div.ratings-new-div h3.rating-new {
+    color: rgb(150, 150, 150);
+    margin: 0;
+    padding: 0;
+}
+
+div.ratings-new-div h3.rating-new.done {
+    color: rgb(10, 10, 10);
+}
