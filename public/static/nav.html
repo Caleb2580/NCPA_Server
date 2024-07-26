@@ -1,0 +1,28 @@
+<div class="left" onclick="location.href='/'">
+    <!-- <h1>NCPA</h1> -->
+    <img src="/images/ncpa.png" alt="">
+</div>
+<div class="right">
+    <a href="/players">PLAYERS</a>
+    <p>|</p>
+    <a href="/colleges">COLLEGES</a>
+    <p>|</p>
+    <a href="/login" class="login">LOG IN</a>
+    <button class="cart-btn"></button>
+    <h1>&#9776;</h1>
+</div>
+
+<script>
+    
+    async function setup() {
+        let me = await fetch('/me').then(res => res.json());
+        if (me.success === true) {
+            let login = document.querySelector('.login');
+            login.innerText = 'PROFILE';
+            login.setAttribute('href', '/profile');
+        }
+    }
+
+    setup();
+
+</script>

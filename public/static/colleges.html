@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Colleges</title>
+    <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="colleges.css">
+</head>
+<body>
+
+    <div class="nav">
+        <script>
+            fetch('/nav.html').then(r => r.text()).then(r => {
+                document.querySelector('body .nav').innerHTML = r;
+                const scripts = document.querySelector('body .nav').getElementsByTagName('script');
+                for (i in scripts) {
+                    eval(scripts[i].textContent);
+                }
+            });
+        </script>
+    </div>
+
+    <div class="loading hide">
+        <div class="ring">Loading
+            <span></span>
+        </div>
+    </div>
+
+    <!-- <button onclick="window.scrollTo({top: 0, behavior: 'smooth'});" class="scroll">&#10514;</button> -->
+
+    <div class="main-container">
+        <div class="main">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+                h2.powered {
+                    font-weight: 400;
+                    font-size: 1em;
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    margin: 0;
+                    margin-top: .15em;
+                    padding: 0;
+                    text-align: right;
+                }
+
+                @media screen and (max-width: 600px) {
+                    h2.powered {
+                        font-size: .9em;
+                        margin-top: .35em;
+                    }
+                }
+
+                @media screen and (max-width: 500px) {
+                    h2.powered {
+                        font-size: .8em;
+                        margin-top: .5em;
+                    }
+                }
+
+                @media screen and (max-width: 350px) {
+                    h2.powered {
+                        margin-top: .35em;
+                        font-size: .65em;
+                    }
+                }
+
+            </style>
+            <h2 class="powered">Powered by <span style="font-family: 'Space Mono'; font-weight: 700; color: rgb(0, 0, 130); cursor: pointer;" onclick="window.open('https://vitalit.solutions');"><span style="text-decoration: underline;">V</span>italIT <span style="text-decoration: underline;"">S</span>olutions</span></h2>
+            
+            <h1 class="college show">COLLEGES</h1>
+            <h2 class="college"></h2>
+            <div class="search-div">
+                <input type="text" placeholder="Search">
+                <button class="search" onclick="search();"><img src="https://static.wixstatic.com/media/76e561_57f5b46344e043539253c0492070f91c~mv2.png/v1/fill/w_552,h_552,al_c,lg_1,q_85,enc_auto/76e561_57f5b46344e043539253c0492070f91c~mv2.png" alt=""></button>
+                <button class="x-btn" onclick="document.querySelector('.search-div input').value = ''; search();">&#x2716;</button>
+            </div>
+            
+            <p><b>**ALL RANKINGS ARE STRICTLY BASED ON TOURNAMENT PLACEMENTS**</b></p>
+            <div>
+            <div class="column-additions">
+            </div>
+
+            <div class="container">
+                <table class="college-table">
+                    
+                </table>
+            </div>
+            <p>Note: </p>
+            <p style="margin-left: 2em;">- () around a rating indicate that a college isn't fully eligible, as they don't have any fully eligible players.</p>
+            <p style="margin-left: 2em;">- Placements are based on the top performing team from each college.</p>
+            <p style="margin-left: 2em;">- D2 Colleges will not be ranked.</p>
+            <div class="refresh-div">
+                <button onclick="setup();">REFRESH</button>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="colleges.js"></script>
+</html>

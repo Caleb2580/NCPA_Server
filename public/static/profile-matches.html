@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Players</title>
+    <link rel="stylesheet" href="nav.css">
+    <link rel="stylesheet" href="profile-matches.css">
+</head>
+<body>
+
+    <div class="loading hide">
+        <div class="ring">Loading
+            <span></span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="main">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+                h2.powered {
+                    font-weight: 400;
+                    font-size: 1em;
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    margin: 0;
+                    margin-top: .15em;
+                    padding: 0;
+                    text-align: right;
+                }
+
+                .back-btn {
+                    display: none;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .back-btn.show {
+                    display: block;
+                }
+
+                .gender-div {
+                    border-radius: 2em;
+                    margin: 0;
+                    display: flex;
+                    justify-content: space-around;
+                    align-items: center;
+                    flex-direction: row;
+                    background-color: rgb(250, 250, 250);
+                    width: 300px;
+                    padding: 0;
+                    overflow: hidden;
+                }
+
+                .gender-div div {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 0;
+                    margin: 0;
+                    width: 100%;
+                    height: 100%;
+                }
+
+                .gender-div div h1 {
+                    font-size: .7em;
+                    padding: 1em;
+                    color: rgb(10, 10, 10);
+                    margin: 0;
+                    cursor: pointer;
+                }
+
+                .gender-div div.selected {
+                    background-color: rgb(126, 173, 237);
+                }
+
+                .gender-div div.selected h1 {
+                    color: rgb(250, 250, 250);
+                }
+
+                @media screen and (max-width: 600px) {
+                    h2.powered {
+                        font-size: .9em;
+                        margin-top: .35em;
+                    }
+
+                    .gender-div {
+                        width: 200px;
+                    }
+                }
+
+                @media screen and (max-width: 500px) {
+                    h2.powered {
+                        font-size: .8em;
+                        margin-top: .5em;
+                    }
+                }
+
+                @media screen and (max-width: 350px) {
+                    h2.powered {
+                        margin-top: .35em;
+                        font-size: .65em;
+                    }
+                }
+            </style>
+            <h1 class="college show">MATCHES</h1>
+            <div class="search-div">
+                <input type="text" placeholder="Search">
+                <button class="search" onclick="search();"><img src="/images/search.png" alt=""></button>
+                <button class="x-btn" onclick="document.querySelector('.search-div input').value = ''; search();">&#x2716;</button>
+            </div>
+            <div>
+                <select name="" id="" class="sort">
+                    <!-- <option value="first_name1">Ranking</option> -->
+                </select>
+            </div>
+            <div class="column-additions">
+            </div>
+            <div class="container">
+                <table class="player-table">
+                    
+                </table>
+            </div>
+            <div class="refresh-div">
+                <button onclick="setup();">REFRESH</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="player-profile hide">
+        <div class="player-container">
+            <button onclick="this.parentElement.parentElement.classList.add('hide');">&#x2716;</button>
+            <div class="top"></div>
+            <div class="middle"></div>
+            <div class="bottom"></div>
+        </div>
+    </div>
+</body>
+<script src="profile-matches.js"></script>
+</html>

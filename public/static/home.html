@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="home.css">
+    <link rel="stylesheet" href="nav.css">
+    <title>NCPA</title>
+</head>
+<body>
+    <div class="nav">
+        <script>
+            fetch('/nav.html').then(r => r.text()).then(r => {
+                document.querySelector('body .nav').innerHTML = r;
+                const scripts = document.querySelector('body .nav').getElementsByTagName('script');
+                for (i in scripts) {
+                    eval(scripts[i].textContent);
+                }
+            });
+        </script>
+    </div>
+
+    <div class="home">
+        <div class="bg_color"></div>
+        <h1>MOVING THE FASTEST GROWING SPORT FORWARD</h1>
+        <h2>MATTHEW 7: 13-14</h2>
+    </div>
+
+    <div class="partners-page">
+        <h1>OUR PARTNERS</h1>
+        <div class="spacer"></div>
+        <div class="partner-images">
+            <img onclick="window.open('https://www.trillertv.com/')" src="trillertv_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://pickleballden.com/')" src="pickleballden_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://www.usatoday.com/sports/')" src="usatodaysports_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://www.teamip.com/')" src="teamip_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://www.a21.org/')" src="A21_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://www.its.com/brands/tripevents')" src="tripevents_sponsor.jpg" style="height: 50px" alt="">
+            <img onclick="window.open('https://www.grouphousing.net/about')" src="grouphousing_sponsor.png" style="height: 50px" alt="">
+            <img onclick="window.open('https://pickletv.com/')" src="pickletv_sponsor.png" style="height: 50px" alt="">
+        </div>
+    </div>
+
+    <div class="bottom-links">
+        <div class="link learn-more" onclick="location.href = '/';">
+            <div></div>
+            <button>LEARN MORE</button>
+        </div>
+        <div class="link compete" onclick="location.href = '/';">
+            <div></div>
+            <button>COMPETE</button>
+        </div>
+        <div class="link connect" onclick="location.href = '/';">
+            <div></div>
+            <button>CONNECT</button>
+        </div>
+    </div>
+
+    <div class="player-profile">
+        <div class="bg"></div>
+        <div class="page-container">
+            <img class="hex one" src="hex1.png" alt="">
+            <img class="hex two" src="hex2.png" alt="">
+            <div class="page">
+                <img src="pickleball_player2.png" alt="">
+                <h1><span>NCPA</span>Player Profile</h1>
+                <h4>Players will be able to access the following information</h4>
+                <ul>
+                    <li>UNIVERSITY RANKINGS</li>
+                    <li>INDIVIDUAL PLAYER RANKINGS AGAINST THOUSANDS OF ATHLETES NATIONWIDE</li>
+                    <li>NCPA PLAYER RATING</li>
+                    <li>EXCLUSIVE CONTENT AND BONUS WINNINGS $$$</li>
+                </ul>
+                <button class="create-profile-btn" onclick="window.open('/create-profile')">Create Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="inquiries">
+            <div>
+                <h1 class="inquiries">FOR INQUIRIES</h1>
+            </div>
+            <div>
+                <img src="phone.png" alt="">
+                <h1>(760)-685-4146</h1>
+            </div>
+            <div>
+                <img src="email.png" alt="">
+                <a href="mailto:noahsuemnick@ncpaofficial.com">noahsuemnick@ncpaofficial.com</a>
+            </div>
+        </div>
+        <div class="ncpa">
+            <h1>NCPA</h1>
+        </div>
+        <div class="social-media">
+            <div class="ims">
+                <img src="facebook.webp" alt="">
+                <img src="instagram.webp" alt="">
+                <img src="x.webp" alt="">
+            </div>
+            <h1><span>Follow us</span><span>@NCPAPICKLEBALL</span></h1>
+        </div>
+    </div>
+
+</body>
+<script src="home.js"></script>
+</html>

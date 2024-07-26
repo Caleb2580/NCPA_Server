@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournaments - Success</title>
+    <link rel="stylesheet" href="nav.css">
+</head>
+<body>
+    <div class="nav">
+        <script>
+            fetch('/nav.html').then(r => r.text()).then(r => {
+                document.querySelector('body .nav').innerHTML = r;
+                const scripts = document.querySelector('body .nav').getElementsByTagName('script');
+                for (i in scripts) {
+                    eval(scripts[i].textContent);
+                }
+            });
+        </script>
+    </div>
+    
+    <h1>Your purchase was successful</h1>
+</body>
+</html>

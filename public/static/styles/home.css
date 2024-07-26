@@ -1,0 +1,374 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Lexend Peta';
+    font-weight: 400;
+    overflow-x: hidden;
+    z-index: -5;
+    background-color: rgb(250, 250, 250);
+}
+
+.home {
+    width: 100%;
+    height: calc(100% - 100px);
+    background-image: url('home_bg.jpg');
+    background-position: center;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.home .bg_color {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .3);
+    z-index: 0;
+}
+
+.home h1 {
+    width: 60%;
+    text-align: center;
+    color: rgb(250, 250, 250);
+    font-weight: 500;
+    font-size: 2.5em;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+    text-shadow: 0 0 .1em rgba(0, 0, 0, .5);
+}
+
+.home h2 {
+    width: 60%;
+    text-align: center;
+    color: rgb(250, 250, 250);
+    font-weight: 500;
+    font-size: 1.5em;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+    text-shadow: 0 0 .1em rgba(0, 0, 0, .5);
+}
+
+.partners-page {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin: 2em 0;
+    padding: 0;
+    gap: 2.5rem;
+}
+
+.partners-page h1 {
+    font-size: 1.7em;
+    font-weight: 400;
+    color: rgb(10, 10, 10);
+    margin: 0;
+    padding: 0;
+}
+
+.partners-page div.spacer {
+    width: 12em;
+    height: 2px;
+    background-color: rgb(10, 10, 10);
+    margin-top: -1.5em;
+}
+
+.partners-page img {
+    cursor: pointer;
+}
+
+
+.bottom-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5em 10em;
+    margin: 4em 2em;
+    padding: 0;
+}
+
+.bottom-links .link {
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-position: center;
+    background-size: 110% 110%;
+    transition: ease-in-out .3s;
+    cursor: pointer;
+}
+
+.bottom-links .link.learn-more {
+    background-image: url('learn-more.jpg');
+}
+
+.bottom-links .link.compete {
+    background-image: url('compete.jpg');
+}
+
+.bottom-links .link.connect {
+    background-image: url('connect.jpg');
+}
+
+.bottom-links .link:hover {
+    background-size: 100% 100%;
+    font-size: 1.2em;
+}
+
+.bottom-links .link div {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(250, 250, 250, .2);
+    z-index: 2;
+}
+
+.bottom-links .link button {
+    background-color: rgba(0, 0, 0, .7);
+    font-family: 'Lexend Peta';
+    color: white;
+    border: 0;
+    margin: 0;
+    padding: 1em 1.5em;
+    border-radius: 10px;
+    cursor: pointer;
+    z-index: 3;
+    font-size: 1em;
+}
+
+.partners-page {
+    margin: 4em 0;
+    padding: 0;
+}
+
+.partner-images {
+    width: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+div.player-profile {
+    width: 100%;
+    padding: 4em 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url('palm_trees.png');
+    background-position: center;
+    background-size: cover;
+    position: relative;
+    z-index: 0;
+}
+
+div.player-profile div.bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(50, 50, 50, .5);
+    z-index: 1;
+}
+
+div.player-profile div.page-container {
+    width: 600px;
+    padding: 0 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 2em 0;
+    border-radius: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+div.player-profile div.page {
+    width: 600px;
+    padding: 4em 2em;
+    background-color: rgb(175, 175, 175);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 2em 0;
+    border-radius: 15px;
+    position: relative;
+    z-index: 3;
+}
+
+div.player-profile div.page img {
+    position: absolute;
+    top: -42.5px;
+    height: 85px;
+}
+
+div.player-profile div.page-container img.hex {
+    height: 100px;
+    position: absolute;
+    top: -40px;
+    right: -50px;
+}
+
+div.player-profile div.page-container img.hex.two {
+    left: -50px;
+    top: calc(100% - 60px);
+}
+
+div.player-profile div.page h1 {
+    font-weight: 400;
+    font-size: 3em;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    color: rgb(250, 250, 250);
+    text-shadow: 0 0 .1em rgba(0, 0, 0, .5);
+}
+
+div.player-profile div.page h1 span {
+    display: block;
+}
+
+div.player-profile div.page h4 {
+    width: 90%;
+    font-weight: 400;
+    font-size: .9em;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    color: rgb(250, 250, 250);
+    text-shadow: 0 0 .2em rgba(0, 0, 0, .5);
+}
+
+div.player-profile div.page ul {
+    width: 70%;
+    font-weight: 400;
+    font-size: .9em;
+    text-align: left;
+    margin: 0;
+    padding: 0;
+}
+
+div.player-profile div.page ul li {
+    margin-bottom: 1em;
+    color: rgb(250, 250, 250);
+    text-shadow: 0 0 .2em rgba(0, 0, 0, .5);
+}
+
+div.player-profile div.page ul li:last-child {
+    margin-bottom: 1em;
+}
+
+div.player-profile .create-profile-btn {
+    color: rgb(250, 250, 250);
+    background-color: rgb(126, 173, 237);
+    /* border: 3px solid rgb(126, 173, 237); */
+    border: none;
+    font-family: 'Lexend Peta';
+    font-size: 1em;
+    padding: .7em .7em;
+    cursor: pointer;
+    transition: ease-in-out .3s;
+    border-radius: 15px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, .5);
+    z-index: 5;
+    cursor: pointer;
+}
+
+div.player-profile .create-profile-btn:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+
+
+@media screen and (max-width: 1100px) {
+    .home {
+        font-size: .8em;
+    }
+
+    .home h1, h2 {
+        width: 90%;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    div.player-profile div.page-container {
+        width: 90%;
+        margin: 0 1em;
+    }
+    div.player-profile div.page {
+        width: 100%;
+        /* margin: 0 1em; */
+        margin: 0;
+
+        font-size: .8em;
+    }
+
+    div.player-profile div.page img {
+        top: -32.5px;
+        height: 65px;
+    }
+
+    div.player-profile div.page-container img.hex {
+        height: 80px;
+        top: -32px;
+        right: calc(-40px + .5em);
+    }
+    
+    div.player-profile div.page-container img.hex.two {
+        left: calc(-40px + .5em);
+        top: calc(100% - 48px);
+    }
+}
+
+@media screen and (max-width: 500px) {
+    div.player-profile div.page {
+        font-size: .6em;
+    }
+
+    div.player-profile div.page img {
+        top: -25px;
+        height: 50px;
+    }
+
+    div.player-profile div.page-container img.hex {
+        height: 60px;
+        top: -24px;
+        right: calc(-30px + 1em);
+    }
+    
+    div.player-profile div.page-container img.hex.two {
+        left: calc(-30px + 1em);
+        top: calc(100% - 36px);
+    }
+}
+
+@media screen and (max-width: 440px) {
+    .home {
+        font-size: .6em;
+    }
+
+    .home h1, h2 {
+        width: 90%;
+    }
+}
+

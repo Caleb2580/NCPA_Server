@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    font-family: 'Lexend Peta';
+    font-weight: 400;
+    overflow-x: hidden;
+    z-index: 0;
+}
+
+.nav {
+    width: calc(100% - 4em);
+    height: 100px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2em;
+    background-color: rgba(250, 250, 250, 1);
+    box-shadow: inset 0 0 5px rgba(10, 10, 10, .3);
+}
+
+.nav .left img {
+    margin: 0;
+    padding: 0;
+    height: 40px;
+    cursor: pointer;
+}
+
+.nav .right {
+    flex-grow: .7;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1em;
+}
+
+.nav .right a {
+    color: rgb(10, 10, 10);
+    text-shadow: 0 0 .05em rgba(0, 0, 0, .5);
+    text-decoration: none;
+    font-size: .8em;
+    margin: 0;
+    padding: 0;
+    transition: ease-in-out .3s;
+}
+
+.nav .right .cart-btn {
+    width: 45px;
+    height: 45px;
+    background-image: url('/images/cart.png');
+    background-size: 100% 100%;
+    background-position: center;
+    border: none;
+    background-color: transparent;
+
+    cursor: pointer;
+}
+
+.nav .right a:hover {
+    font-size: .9em;
+}
+
+.nav .right p {
+    color: rgb(10, 10, 10);
+    text-shadow: 0 0 .08em rgb(0, 0, 0);
+    font-size: .8em;
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+.nav .right h1 {
+    display: none;
+}
+
+
+div.footer {
+    min-height: 100px;
+    padding: 1em 2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em 3em;
+    background-color: rgb(224, 224, 224);
+}
+
+div.footer div.inquiries {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    flex-direction: column;
+    width: 350px;
+}
+
+div.footer div.inquiries div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 1em;
+}
+
+div.footer div.inquiries img {
+    /* position: absolute;
+    left: 0; */
+    height: 20px;
+}
+
+div.footer div.inquiries h1.inquiries {
+    color: black;
+    font-size: .7em;
+    font-weight: 600;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+
+div.footer div.inquiries div h1 {
+    color: black;
+    font-size: .7em;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+}
+
+
+div.footer div.inquiries div a {
+    color: black;
+    font-size: .7em;
+    font-weight: 400;
+    text-decoration: none;
+    margin: 0;
+    padding: 0;
+}
+
+
+div.footer div.ncpa h1 {
+    font-weight: 600;
+    font-size: 3em;
+}
+
+
+div.footer div.social-media {
+    width: 350px;
+}
+
+div.footer div.social-media div.ims {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+div.footer div.social-media div.ims img {
+    height: 40px;
+}
+
+div.footer div.social-media>h1 {
+    font-weight: 400;
+    font-size: .8em;
+    text-align: center;
+}
+
+div.footer div.social-media>h1 span {
+    display: block;
+}
+
+
+/* @media screen and (max-width: 1200px) {
+    .nav {
+        font-size: .8em;
+    }
+} */
+
+@media screen and (max-width: 1100px) {
+    .nav .right a, .nav .right p {
+        display: none;
+    }
+
+    .nav .right {
+        justify-content: right;
+        gap: 0 1em;
+    }
+
+    .nav .right h1 {
+        display: inline;
+        cursor: pointer;
+    }
+}
+
+@media screen and (max-width: 440px) {
+    .nav .left img {
+        height: 30px;
+    }
+
+    .nav .right .cart-btn {
+        height: 35px;
+        width: 35px;
+    }
+}
+
+
+@media screen and (max-width: 350px) {
+    .nav .left img {
+        height: 25px;
+    }
+
+    .nav .right .cart-btn {
+        height: 30px;
+        width: 30px;
+    }
+}
+

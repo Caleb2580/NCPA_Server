@@ -1,0 +1,643 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Lexend Peta';
+    font-weight: 700;
+    font-size: 16px;
+    overflow: hidden;
+    background-color: rgb(250, 250, 250);
+}
+
+
+.main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.menu {
+    width: 15em;
+    height: 100%;
+    background-color: rgb(10, 10, 10);
+}
+
+.page {
+    width: calc(100% - 19em);
+    height: calc(100% - 4em);
+    padding: 2em;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.menu .header {
+    width: 100%;
+    min-height: 7em;
+    max-height: 7em;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.menu .header h1 {
+    color: rgb(250, 250, 250);
+    font-weight: 500;
+    font-size: 2.5em;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+.main .header p {
+    color: rgb(250, 250, 250);
+    font-weight: 500;
+    font-size: .8em;
+    margin: 0;
+}
+
+.menu .stuff {
+    display: flex;
+    justify-content: space-between;
+    align-items: space-around;
+    width: 100%;
+    height: calc(100% - 7em);
+    flex-direction: column;
+}
+
+.menu .items {
+    padding: 0 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.menu .items button {
+    width: 100%;
+    background-color: transparent;
+    color: rgb(250, 250, 250);
+    font-family: 'Lexend Peta';
+    font-size: 1em;
+    border: none;
+    height: 3em;
+    text-align: left;
+    padding: 0 0 0 1em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.menu .items button.selected {
+    background-color: rgb(31, 55, 85);
+}
+
+.menu .items button:hover {
+    background-color: rgb(16, 40, 70);
+}
+
+
+.page>div {
+    display: none;
+}
+
+.page>div.show {
+    display: flex;
+}
+
+
+
+.page .Tournaments>h5 {
+    width: 100%;
+    text-align: left;
+    margin: 0;
+}
+
+.page .Tournaments>h5 span {
+    cursor: pointer;
+}
+
+.page .Tournaments>div {
+    display: none;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+.page .Tournaments>div.show {
+    display: flex;
+}
+
+.page .Tournaments .List {
+    width: 90%;
+    gap: 1em;
+    margin: 1em 0;
+}
+
+.page .Tournaments .List h1 {
+    font-size: 1.8em;
+    font-weight: 400;
+    width: 100%;
+    text-align: left;
+    margin: 0;
+}
+
+.page .Tournaments .tournament-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.page .Tournaments .tournament-container h1 {
+    font-size: 1.5em;
+    margin: none;
+}
+
+.page .Tournaments .tournament-container .tournament {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-direction: column;
+    width: calc(100% - 2em);
+    cursor: pointer;
+}
+
+
+.page .Tournaments .date-div {
+    border-radius: 2em;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    background-color: rgb(235, 235, 235);
+    width: 20em;
+    padding: 0;
+    overflow: hidden;
+    gap: 0;
+    margin-left: 0;
+}
+
+.page .Tournaments .date-create-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .date-create-container button.create-tournament {
+    font-family: 'Lexend Peta';
+    font-size: .7em;
+    color: rgb(250, 250, 250);
+    background-color: rgb(31, 55, 85);
+    border: 2px solid rgb(31, 55, 85);
+    border-radius: 2em;
+    padding: .3em .8em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page .Tournaments .date-create-container button.create-tournament:hover {
+    color: rgb(31, 55, 85);
+    background-color: rgb(250, 250, 250);
+}
+
+.page .Tournaments .date-div div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.page .Tournaments .date-div div h1 {
+    font-size: .7em;
+    padding: 1em;
+    color: rgb(122, 122, 122);
+    margin: 0;
+    cursor: pointer;
+    text-align: center;
+}
+
+.page .Tournaments .date-div div.selected {
+    background-color: rgb(31, 55, 85);
+}
+
+.page .Tournaments .date-div div.selected h1 {
+    color: rgb(250, 250, 250);
+}
+
+.page .Tournaments .tournament-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1em 0;
+    gap: 1em;
+}
+
+.page .Tournaments .tournament-container>div {
+    width: 100%;
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 0 .5em rgba(0, 0, 0, .2);
+    padding: 1em 1em;
+    border-radius: 1em;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .5em;
+}
+
+.page .Tournaments .tournament-container>div h1 {
+    font-size: 1.3em;
+    font-weight: 400;
+    margin: 0;
+}
+
+.page .Tournaments .tournament-container>div h2 {
+    font-size: 1em;
+    font-weight: 400;
+    margin: 0;
+}
+
+
+.page .Tournaments .tournament-container .tools-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em;
+    margin-top: .5em;
+}
+
+.page .Tournaments .tournament-container .tools-container .edit {
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
+    color: rgb(250, 250, 250);
+    padding: .3em .8em;
+    font-family: 'Lexend Peta';
+    border-radius: 2em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page .Tournaments .tournament-container .tools-container .edit:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+.page .Tournaments .tournament-container .tools-container .delete {
+    background-color: rgb(224,71,76);
+    border: 2px solid rgb(224,71,76);
+    color: rgb(250, 250, 250);
+    padding: .3em .8em;
+    font-family: 'Lexend Peta';
+    border-radius: 2em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page .Tournaments .tournament-container .tools-container .delete:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(224,71,76);
+}
+
+
+
+.page .Tournaments .Create {
+    margin-top: 1em;
+    gap: 1em;
+}
+
+.page .Tournaments .Create h1{
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 400;
+    text-align: center;
+}
+
+.page .Tournaments .Create input[type="date"] {
+    border: 1px solid rgb(175, 175, 175);
+    border-radius: 10px;
+    font-family: 'Lexend Peta';
+    font-size: .8em;
+    padding: .3em;
+    color: rgb(31, 55, 85);
+}
+
+
+.page .Tournaments .Create .info {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1em;
+    font-size: 1.2em;
+}
+
+.page .Tournaments .Create .info>div {
+    width: 20em;
+    padding: .5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-direction: column;
+    height: 20em;
+}
+
+.page .Tournaments .Create .info>div.part2 {
+    justify-content: space-between;
+}
+
+.page .Tournaments .Create .info .inner {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .3em;
+    /* width: 15em; */
+    width: 100%;
+}
+
+.page .Tournaments .Create .info .inner h3 {
+    margin: 0;
+    font-size: .9em;
+    font-weight: 400;
+    color: rgb(31, 55, 85);
+}
+
+.page .Tournaments .Create .info .inner input, .page .Tournaments .Create .info .inner textarea {
+    font-size: .8em;
+    font-weight: 500;
+    margin: 0;
+    padding: .6em;
+    outline: none;
+    border: 2px solid rgb(225, 225, 225);
+    background-color: rgb(250, 250, 250);
+    border-radius: 10px;
+    width: 90%;
+    font-family: 'Lexend Peta';
+    width: calc(100% - 1.2em);
+    text-wrap: wrap;
+    color: rgb(31, 55, 85);
+}
+
+.page .Tournaments .Create .info .inner textarea {
+    resize: none;
+    font-size: .8em;
+    height: 18em;
+}
+
+.page .Tournaments .Create .info .inner>div {
+    font-size: .8em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .2em;
+    width: 100%;
+}
+
+.page .Tournaments .Create .info .inner>div h3 {
+    font-size: 1em;
+}
+
+
+.page .Tournaments .Create .info .inner button {
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(31, 55, 85);
+    background-color: rgb(31, 55, 85);
+    color: rgb(250, 250, 250);
+    font-size: .7em;
+    padding: .5em 1em;
+    border-radius: 10px;
+    margin: auto;
+    margin-bottom: .25em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page .Tournaments .Create .info .inner button:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(31, 55, 85);
+}
+
+
+
+
+
+
+/* View */
+
+.page .Tournaments .View {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 1em;
+}
+
+.page .Tournaments .View .header {
+    margin-top: 2em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: .3em;
+}
+
+.page .Tournaments .View .header>h1 {
+    font-weight: 500;
+    font-size: 1.5em;
+    margin: 0;
+    color: rgb(10, 10, 10);
+}
+
+.page .Tournaments .View .header>h2 {
+    font-weight: 400;
+    font-size: .9em;
+    margin: 0;
+    color: rgb(10, 10, 10);
+}
+
+.page .Tournaments .View .sites {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .3em;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .View .sites button {
+    font-family: 'Lexend Peta';
+    font-size: .8em;
+    color: rgb(10, 10, 10);
+    font-weight: 800;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0;
+}
+
+.page .Tournaments .View .main-view {
+    margin-top: 1em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 1em;
+    width: 100%;
+}
+
+.page .Tournaments .View .main-view button {
+    font-family: 'Lexend Peta';
+    font-size: .8em;
+    color: rgb(10, 10, 10);
+    font-weight: 800;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    padding: 1em 1em;
+    box-shadow: 0 0 5px rgba(31, 55, 85, .5);
+    border-radius: 1em;
+    transition: ease-in-out .2s;
+}
+
+
+.page .Tournaments .View .main-view .tools {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .View .main-view .tools .create {
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
+    padding: .5em .5em;
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+    width: auto;
+}
+
+.page .Tournaments .View .main-view .tools .create:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+
+/* Create Tournament Team */
+.page .Tournaments .View.Create {
+    margin-top: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: auto 0;
+}
+
+.page .Tournaments .View.Create input {
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(10, 10, 10);
+    outline: none;
+    border-radius: 1em;
+    padding: 1em;
+    width: 30em;
+}
+
+.page .Tournaments .View.Create .create {
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
+    padding: .5em .5em;
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+    width: auto;
+    border-radius: 1em;
+    cursor: pointer;
+    font-family: 'Lexend Peta';
+}
+
+.page .Tournaments .View.Create .create:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+.page .Tournaments .View.Team {
+    margin-top: 2em;
+}
+
+.page .Tournaments .View.Team>h1 {
+    font-weight: 500;
+    font-size: 1.3em;
+    margin: 0;
+    color: rgb(10, 10, 10);
+}
+
+.page .Tournaments .View.Team .captain-key {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .View.Team .captain-key h2 {
+    font-weight: 400;
+    font-size: .9em;
+    margin: 0;
+    color: rgb(10, 10, 10);
+}
+
+.page .Tournaments .View.Team .captain-key h2 span:hover {
+    color: rgb(125, 125, 125);
+    cursor: pointer;
+}
+
+.page .Tournaments .View.Team .captain-key button {
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
+    padding: .5em .5em;
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+    width: auto;
+    border-radius: 1em;
+    cursor: pointer;
+    font-family: 'Lexend Peta';
+    font-size: .65em;
+}
+
+.page .Tournaments .View.Team .captain-key button:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+.page .Tournaments .View.Team .captain-key button.copy {
+    background-color: rgb(150, 150, 150);
+    border: 2px solid rgb(150, 150, 150);
+}
+
+.page .Tournaments .View.Team .captain-key button.copy:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(150, 150, 150);
+}
+
+
+

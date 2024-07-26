@@ -3,86 +3,948 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NCPA - Admin</title>
+    <title>Tournaments - Admin</title>
+    <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: 'Montserrat', sans-serif;
-            width: 100%;
-            height: 100%;
-            background-color: rgb(25, 25, 25);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            /* overflow: hidden; */
-        }
-
-        .main {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 1em;
-            gap: 2em;
-            flex-direction: column;
-        }
-
-        .main h1 {
-            color: rgb(250, 250, 250);
-            padding: 0;
-            margin: 0;
-        }
-
-        .main a {
-            font-size: 1.5em;
-            color: rgb(250, 250, 250);
-            font-weight: 400;
-            text-decoration: underline;
-            cursor: pointer;
-            margin: 0;
-        }
-
-        @media screen and (max-width: 400px) {
-            .main {
-                font-size: .8em;
-            }
-        }
-    </style>
-
-
     <div class="main">
-        <h1>ADMIN TOOLS</h1>
+        <div class="menu">
+            <div class="header">
+                <h1 onclick="location.href = '/';">NCPA</h1>
+                <p>ADMIN</p>
+            </div>
+            <div class="stuff">
+                <div class="items">
+                    <button class="selected" onclick="menuSelect(event)">Tournaments</button>
+                    <button onclick="menuSelect(event)">Reset Database</button>
+                    <button onclick="location.href = '/'">Home</button>
+                </div>
+            </div>
+        </div>
+        <div class="page">
+
+            <div class="Tournaments" style="width: 100%; min-height: 100%; flex-direction: column; align-items: center;">
+                <h5><span onclick="goto(0);">Tournaments</span></h5>
+                <div class="List show">
+                    <h1>Tournaments</h1>
+                    <div class="date-create-container">
+                        <div class="date-div">
+                            <div onclick="selectDate(event)" class="selected"><h1 onclick="selectDate(event, true)">Current</h1></div>
+                            <div onclick="selectDate(event)"><h1 onclick="selectDate(event, true)">Upcoming</h1></div>
+                            <div onclick="selectDate(event)"><h1 onclick="selectDate(event, true)">Past</h1></div>
+                            <div onclick="selectDate(event)"><h1 onclick="selectDate(event, true)">TBD</h1></div>
+                        </div>
+                        <button onclick="goto(1)" class="create-tournament">Create</button>
+                    </div>
+
+                    <div class="tournament-container">
+
+                    </div>
+
+                    <script>
+                        
+                        let tournaments = {};
+                        let currentViewTournament = {};
+                        let currentViewTeam = {};
+                        let months = {
+                            '01': 'Jan',
+                            '02': 'Feb',
+                            '03': 'Mar',
+                            '04': 'Apr',
+                            '05': 'May',
+                            '06': 'Jun',
+                            '07': 'Jul',
+                            '08': 'Aug',
+                            '09': 'Sep',
+                            '10': 'Oct',
+                            '11': 'Nov',
+                            '12': 'Dec'
+                        };
+
+                        function getTournament(t_name) {
+                            for (type in tournaments) {
+                                for (i in tournaments[type]) {
+                                    if (tournaments[type][i].name === t_name) {
+                                        return tournaments[type][i];
+                                    }
+                                }
+                            }
+                        }
+
+                        function selectDate(event, h) {
+                            event.stopPropagation();
+                            let e = event.target;
+                            if (h) {
+                                e = event.target.parentElement;
+                            }
+                            document.querySelector('.date-div').querySelectorAll('div').forEach(d => {
+                                d.classList.remove('selected');
+                            });
+
+                            e.classList.add('selected');
+
+                            select();
+                        }
+
+                        function updateView() {
+                            let view = document.querySelector('.Tournaments .View');
+                            view.innerHTML = '';
+
+                            let t_name = view.getAttribute('id').substring(5, view.getAttribute('id').length);
+                            
+                            let tournament = getTournament(t_name);
+                            currentViewTournament = tournament;
+
+                            let header = document.createElement('div');
+                            header.classList.add('header');
+
+                            let name = document.createElement('h1');
+                            name.innerText = tournament.name;
+                            header.appendChild(name);
+
+                            if (tournament.venue !== null) {
+                                let loc = document.createElement('h2');
+                                loc.innerText = tournament.venue;
+                                header.appendChild(loc);
+                            }
+
+                            if (tournament.begin_date !== null) {
+                                let date = document.createElement('h2');
+                                date.innerText = tournament.begin_date;
+                                if (tournament.end_date !== null) {
+                                    date.innerText = tournament.begin_date + ' - ' + tournament.end_date;
+                                }
+                                header.appendChild(date)
+                            }
+
+                            view.appendChild(header);
+
+                            let sites = document.createElement('div');
+                            sites.classList.add('sites');
+                            
+                            let teams = document.createElement('button');
+                            teams.innerText = 'Teams';
+                            sites.appendChild(teams);
+
+                            teams.addEventListener('click', (event) => {
+                                let main = document.querySelector('.page .Tournaments .View .main-view');
+                                main.innerHTML = '';
+
+                                let teams_counter = 0;
+
+                                tournaments.teams.forEach(team => {
+                                    if (team.tournament === currentViewTournament.name) {
+                                        teams_counter += 1;
+                                        let btn = document.createElement('button');
+                                        btn.innerText = team.name;
+                                        btn.setAttribute('onclick', `
+                                            currentViewTeam = ${JSON.stringify(team)};
+                                            updateViewTeam();
+                                            goto(5);
+                                        `)
+
+                                        main.appendChild(btn);
+                                    }
+                                })
+
+                                if (teams_counter == 0) {
+                                    let none = document.createElement('h1');
+                                    none.innerText = 'No Teams';
+                                    none.setAttribute('style', 'margin: 0 auto; font-weight: 400; font-size: 1.3em;');
+                                    main.appendChild(none);
+                                }
+
+                                let tools = document.createElement('div');
+                                tools.classList.add('tools');
+                                
+                                let create = document.createElement('button');
+                                create.classList.add('create');
+                                create.innerText = 'Create';
+                                create.addEventListener('click', event => {
+                                    goto(4);
+                                })
+
+                                tools.appendChild(create);
+
+                                main.appendChild(tools);
+                            })
+
+                            view.appendChild(sites);
+
+                            let main_view = document.createElement('div');
+                            main_view.classList.add('main-view');
+                            
+                            view.appendChild(main_view);
+
+                            teams.dispatchEvent(new Event('click'));
+
+                        }
+
+                        function updateViewTeam() {
+                            console.log(currentViewTeam);
+
+                            let vt = document.querySelector('.page .Tournaments .View.Team')
+                            vt.innerHTML = '';
+
+                            let name = document.createElement('h1');
+                            name.innerText = currentViewTeam.name;
+
+                            vt.appendChild(name);
+
+                            let ck_div = document.createElement('div');
+                            ck_div.classList.add('captain-key');
+
+                            let captain_key = document.createElement('h2');
+                            captain_key.innerHTML = 'Captain Key - ';
+                            let span = document.createElement('span');
+                            if (currentViewTeam.captain_key === null) {
+                                span.innerHTML += 'None'
+                            } else {
+                                for (let i in currentViewTeam.captain_key) {
+                                    span.innerHTML += '•';
+                                }
+                            }
+                            span.addEventListener('click', event => {
+                                if (event.target.classList.contains('show')) {
+                                    event.target.classList.remove('show');
+                                    event.target.innerHTML = '';
+                                    for (let i in currentViewTeam.captain_key) {
+                                        event.target.innerHTML += '•';
+                                    }
+                                } else {
+                                    event.target.classList.add('show');
+                                    event.target.innerHTML = currentViewTeam.captain_key;
+                                }
+                            })
+                            captain_key.appendChild(span);
+
+                            let generate_btn = document.createElement('button');
+                            generate_btn.innerText = 'Generate New Key';
+
+                            generate_btn.addEventListener('click', async(event) => {
+                                let res = await fetch('/admin/generate-new-team-captiain-key', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        'team_id': currentViewTeam.tournament_team_id,
+                                        'tournament': currentViewTeam.tournament
+                                    })
+                                }).then(res => res.json());
+
+                                if (res.success) {
+                                    for (let i in tournaments.teams) {
+                                        if (tournaments.teams[i].name == currentViewTeam.name) {
+                                            tournaments.teams[i].captain_key = res.key;
+                                            break;
+                                        }
+                                    }
+                                    currentViewTeam.captain_key = res.key;
+                                    let span = document.querySelector('.page .Tournaments .View.Team .captain-key h2 span');
+                                    span.dispatchEvent(new Event('click'));
+                                    if (!span.classList.contains('show')) {
+                                        span.dispatchEvent(new Event('click'));
+                                    }
+                                } else {
+                                    alert(res.error);
+                                }
+                            })
+                            
+                            let copy_btn = document.createElement('button');
+                            copy_btn.innerText = 'Copy';
+                            copy_btn.classList.add('copy');
+                            copy_btn.addEventListener('click', async(event) => {
+                                navigator.clipboard.writeText(currentViewTeam.captain_key).then(() => {
+                                    alert("Copied");
+                                }).catch(() => {
+                                    alert("Failed to copy");
+                                })
+                            })
+
+                            ck_div.appendChild(captain_key);
+                            ck_div.appendChild(generate_btn);
+                            ck_div.appendChild(copy_btn);
+                            vt.appendChild(ck_div);
+                        }
+
+                        function select() {
+                            let type = document.querySelector('.date-div div.selected').innerText.toLowerCase();
+                            let t_cont = document.querySelector('.tournament-container');
+                            t_cont.innerHTML = '';    
+
+                            if (type in tournaments && tournaments[type].length > 0) {
+                                for (i in tournaments[type]) {
+                                    let t = document.createElement('div');
+                                    t.classList.add('tournament');
+
+                                    if (tournaments[type][i].name == null) {
+                                        let name = document.createElement('h1');
+                                        name.innerText = 'Name TBD';
+                                        t.appendChild(name);
+                                    } else {
+                                        let name = document.createElement('h1');
+                                        name.innerText = tournaments[type][i].name;
+                                        t.appendChild(name);
+                                    }
+                                    
+                                    if (tournaments[type][i].venue == null) {
+                                        let location = document.createElement('h2');
+                                        location.innerText = 'Venue TBD';
+                                        t.appendChild(location);
+                                    } else {
+                                        let location = document.createElement('h2');
+                                        location.innerText = tournaments[type][i].venue;
+                                        t.appendChild(location);
+                                    }
+                                        
+                                    if (tournaments[type][i].registration_open != null && tournaments[type][i].registration_close != null) {
+                                        let reg_date = document.createElement('h2');
+                                        reg_date.innerText = 'Registration open from ' + tournaments[type][i].registration_open + ' to ' + tournaments[type][i].registration_close;
+                                        t.appendChild(reg_date);
+                                    }
+                                    
+                                    if (tournaments[type][i].begin_date != null) {
+                                        let date = document.createElement('h2');
+                                        if (tournaments[type][i].begin_date == null || tournaments[type][i].begin_date == tournaments[type][i].end_date) {
+                                            date.innerText = tournaments[type][i].begin_date;
+                                        } else {
+                                            date.innerText = tournaments[type][i].begin_date + ' - ' + tournaments[type][i].end_date;
+                                        }
+                                        t.appendChild(date);
+                                    }
+
+                                    let tools_container = document.createElement('div');
+                                    tools_container.classList.add('tools-container');
+
+                                    let edit_btn = document.createElement('button');
+                                    edit_btn.classList.add('edit');
+                                    edit_btn.innerText = 'EDIT';
+                                    edit_btn.setAttribute('onclick', `
+                                        event.stopPropagation();
+                                        let edit_div = document.querySelector('.page .Tournaments .Create.Edit');
+                                        ct = ${JSON.stringify(tournaments[type][i])};
+                                        for (key in ct) {
+                                            console.log(ct[key]);
+                                            let e = edit_div.querySelector("input." + key);
+                                            if (e != null) {
+                                                if (('original_' + key) in ct) {
+                                                    e.value = ct['original_' + key];
+                                                } else {
+                                                    e.value = ct[key];
+                                                }
+                                            }
+                                        }
+                                        if (ct.description != null) {
+                                            edit_div.querySelector("textarea.description").value = ct.description;
+                                        }
+
+                                        edit_div.setAttribute("id", ct.name);
+
+                                        goto(2);
+                                    `);
+
+                                    let delete_btn = document.createElement('button');
+                                    delete_btn.classList.add('delete');
+                                    delete_btn.addEventListener('click', async(event) => {
+                                        event.stopPropagation();
+                                        let name = event.target.parentElement.parentElement.querySelector('h1').innerText;
+                                        
+                                        let con = confirm('Are you sure you want to delete ' + name + '?');
+                                        
+                                        if (!con) {
+                                            return;
+                                        }
+
+                                        let r = await fetch('/admin/delete-tournament', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                name: name
+                                            })
+                                        }).then(res => res.json());
+
+                                        if (r.success === true) {
+                                            alert(name + ' deleted!');
+                                            await tournament_setup();
+                                            select();
+                                        } else {
+                                            alert(r.error);
+                                        }
+                                    })
+                                    delete_btn.innerText = 'DELETE';
+
+                                    tools_container.appendChild(edit_btn);
+                                    tools_container.appendChild(delete_btn);
+                                    
+                                    t.appendChild(tools_container);
+
+                                    t.setAttribute('id', 'tournament_' + tournaments[type][i].name);
+
+                                    t.addEventListener('click', async(event) => {
+                                        let e = event.target;
+                                        while (!e.classList.contains('tournament')) {
+                                            e = e.parentElement;
+                                        }
+                                        document.querySelector('.page .Tournaments .View').setAttribute('id', 'view_' + e.getAttribute('id').substring(11, e.getAttribute('id').length));
+                                        goto(3);
+                                    })
+                                    
+                                    t_cont.appendChild(t);
+                                }
+                            } else {
+                                let message = document.createElement('h1');
+                                message.innerText = "No tournaments found";
+                                t_cont.appendChild(message);
+                            }
+                        }
+                        
+                        function goto(index) {
+                            document.querySelectorAll('.page .Tournaments>div').forEach(div => {
+                                div.classList.remove('show');
+                            });
+                            let order = document.querySelector('.page .Tournaments>h5');
+                            if (index == 0) {
+                                order.innerHTML = '';
+                                document.querySelector('.List').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                            } else if (index == 1) {
+                                order.innerHTML = '';
+                                document.querySelector('.Create').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                                
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'Create';
+                                span.setAttribute('onclick', 'goto(1);');
+                                order.appendChild(span);
+                            } else if (index == 2) {
+                                order.innerHTML = '';
+                                document.querySelector('.Edit').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                                
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'Edit';
+                                span.setAttribute('onclick', 'goto(2);');
+                                order.appendChild(span);
+                            } else if (index == 3) {
+                                updateView();
+                                order.innerHTML = '';
+                                document.querySelector('.View').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                                
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'View';
+                                span.setAttribute('onclick', 'goto(3);');
+                                order.appendChild(span);
+                            } else if (index == 4) {
+                                order.innerHTML = '';
+                                document.querySelector('.View.Create').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                                
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'View';
+                                span.setAttribute('onclick', 'goto(3);');
+                                order.appendChild(span);
+
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'Create';
+                                span.setAttribute('onclick', 'goto(4);');
+                                order.appendChild(span);
+                            } else if (index == 5) {
+                                order.innerHTML = '';
+                                document.querySelector('.View.Team').classList.add('show');
+                                let span = document.createElement('span');
+                                span.innerText = 'Tournaments';
+                                span.setAttribute('onclick', 'goto(0);');
+                                order.appendChild(span);
+                                
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'View';
+                                span.setAttribute('onclick', 'goto(3);');
+                                order.appendChild(span);
+
+                                order.innerHTML += ' > '
+
+                                span = document.createElement('span');
+                                span.innerText = 'Team';
+                                span.setAttribute('onclick', 'goto(5);');
+                                order.appendChild(span);
+                            }
+                        }
+
+                        async function tournament_setup() {
+                            tournaments = await fetch('/admin/get-tournaments').then(res => res.json());
+                            tournaments = tournaments['tournaments'];
+                            for (type in tournaments) {
+                                for (i in tournaments[type]) {
+                                    if (tournaments[type][i].begin_date != null) {
+                                        tournaments[type][i].begin_date = tournaments[type][i].begin_date.substring(0, tournaments[type][i].begin_date.indexOf('T'));
+                                        let split = tournaments[type][i].begin_date.split('-');
+                                        tournaments[type][i].original_begin_date = tournaments[type][i].begin_date
+                                        tournaments[type][i].begin_date = months[split[1]] + ' ' + ((split[2].length == 2 && split[2].charAt(0) == '0') ? split[2].charAt(1) : split[2]) + ', ' + split[0];
+                                    }
+
+                                    if (tournaments[type][i].end_date != null) {
+                                        tournaments[type][i].end_date = tournaments[type][i].end_date.substring(0, tournaments[type][i].end_date.indexOf('T'));
+                                        let split = tournaments[type][i].end_date.split('-');
+                                        tournaments[type][i].original_end_date = tournaments[type][i].end_date
+                                        tournaments[type][i].end_date = months[split[1]] + ' ' + ((split[2].length == 2 && split[2].charAt(0) == '0') ? split[2].charAt(1) : split[2]) + ', ' + split[0];
+                                    }
+
+                                    if (tournaments[type][i].registration_open != null) {
+                                        tournaments[type][i].registration_open = tournaments[type][i].registration_open.substring(0, tournaments[type][i].registration_open.indexOf('T'));
+                                        let split = tournaments[type][i].registration_open.split('-');
+                                        tournaments[type][i].original_registration_open = tournaments[type][i].registration_open
+                                        tournaments[type][i].registration_open = months[split[1]] + ' ' + ((split[2].length == 2 && split[2].charAt(0) == '0') ? split[2].charAt(1) : split[2]) + ', ' + split[0];
+                                    }
+
+                                    if (tournaments[type][i].registration_close != null) {
+                                        tournaments[type][i].registration_close = tournaments[type][i].registration_close.substring(0, tournaments[type][i].registration_close.indexOf('T'));
+                                        let split = tournaments[type][i].registration_close.split('-');
+                                        tournaments[type][i].original_registration_close = tournaments[type][i].registration_close
+                                        tournaments[type][i].registration_close = months[split[1]] + ' ' + ((split[2].length == 2 && split[2].charAt(0) == '0') ? split[2].charAt(1) : split[2]) + ', ' + split[0];
+                                    }
+                                }
+                            }
+
+                            select();
+                        }
+
+                        tournament_setup();
+                    </script>
+                </div>
+                <div class="Create">
+                    <h1>Create Tournament</h1>
+                    <div class="info">
+                        <div class="part1">
+                            <div class="inner">
+                                <h3>Tournament Name</h3>
+                                <input type="text" class="name">
+                            </div>
+                            <div class="inner">
+                                <h3>Tournament Date</h3>
+                                <div>
+                                    <input type="date" class="begin_date">
+                                    <h3>-</h3>
+                                    <input type="date" class="end_date">
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Registration Dates</h3>
+                                <div>
+                                    <input type="date" class="registration_open">
+                                    <h3>-</h3>
+                                    <input type="date" class="registration_close">
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Venue Name</h3>
+                                <input type="text" class="venue">
+                            </div>
+                            <div class="inner">
+                                <h3>Venue Street Address</h3>
+                                <input type="text" class="venue_address">
+                            </div>
+                        </div>
+                        <div class="part2">
+                            <div class="inner">
+                                <h3>Description</h3>
+                                <textarea name="" id="" class="description"></textarea>
+                            </div>
+                            <div class="inner">
+                                <button onclick="createTournament()">Create</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        
+                        async function createTournament() {
+                            let name = document.querySelector('.Create .info input.name').value;
+                            let begin_date = document.querySelector('.Create .info input.begin_date').value;
+                            let end_date = document.querySelector('.Create .info input.end_date').value;
+                            let registration_open = document.querySelector('.Create .info input.registration_open').value;
+                            let registration_close = document.querySelector('.Create .info input.registration_close').value;
+                            let venue = document.querySelector('.Create .info input.venue').value;
+                            let venue_address = document.querySelector('.Create .info input.venue_address').value;
+                            let description = document.querySelector('.Create .info textarea.description').value;
+
+                            if (name.length == 0) {
+                                return alert('Please enter a tournament name');
+                            }
+
+                            let body = {};
+                            body.name = name;
+                            if (begin_date.length > 0) {
+                                body.begin_date = begin_date;
+                            }
+                            if (end_date.length > 0) {
+                                body.end_date = end_date;
+                            }
+                            if (registration_open.length > 0) {
+                                body.registration_open = registration_open;
+                            }
+                            if (registration_close.length > 0) {
+                                body.registration_close = registration_close;
+                            }
+                            if (venue.length > 0) {
+                                body.venue = venue;
+                            }
+                            if (venue_address.length > 0) {
+                                body.venue_address = venue_address;
+                            }
+                            if (description.length > 0) {
+                                body.description = description;
+                            }
+
+                            let res = await fetch('/admin/create-tournament', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(body)
+                            }).then(res => res.json());
+
+                            if (res['success'] === true) {
+                                alert(body.name + ' created!');
+                                document.querySelectorAll('.Create .info input').forEach(inp => {
+                                    inp.value = '';
+                                });
+                                document.querySelector('.Create .info textarea').value = '';
+                                await tournament_setup();
+                                goto(0);
+                            } else {
+                                if (res['error'] == 'authentication failed') {
+                                    location.href = '/login';
+                                }
+                                alert(res.error);
+                            }
+                        }
+                    </script>
+                </div>
+
+                <div class="Create Edit">
+                    <h1>Edit Tournament</h1>
+                    <div class="info">
+                        <div class="part1">
+                            <div class="inner">
+                                <h3>Tournament Name</h3>
+                                <input type="text" class="name">
+                            </div>
+                            <div class="inner">
+                                <h3>Tournament Date</h3>
+                                <div>
+                                    <input type="date" class="begin_date">
+                                    <h3>-</h3>
+                                    <input type="date" class="end_date">
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Registration Dates</h3>
+                                <div>
+                                    <input type="date" class="registration_open">
+                                    <h3>-</h3>
+                                    <input type="date" class="registration_close">
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Venue Name</h3>
+                                <input type="text" class="venue">
+                            </div>
+                            <div class="inner">
+                                <h3>Venue Street Address</h3>
+                                <input type="text" class="venue_address">
+                            </div>
+                        </div>
+                        <div class="part2">
+                            <div class="inner">
+                                <h3>Description</h3>
+                                <textarea name="" id="" class="description"></textarea>
+                            </div>
+                            <div class="inner">
+                                <button onclick="editTournament()">Edit</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        
+                        async function editTournament() {
+                            let name = document.querySelector('.Create.Edit .info input.name').value;
+                            let begin_date = document.querySelector('.Create.Edit .info input.begin_date').value;
+                            let end_date = document.querySelector('.Create.Edit .info input.end_date').value;
+                            let registration_open = document.querySelector('.Create.Edit .info input.registration_open').value;
+                            let registration_close = document.querySelector('.Create.Edit .info input.registration_close').value;
+                            let venue = document.querySelector('.Create.Edit .info input.venue').value;
+                            let venue_address = document.querySelector('.Create.Edit .info input.venue_address').value;
+                            let description = document.querySelector('.Create.Edit .info textarea.description').value;
+
+                            let old_name = document.querySelector('.Create.Edit').getAttribute('id');
+
+                            if (old_name == null || old_name.length == 0) {
+                                await tournament_setup();
+                                goto(0);
+                            }
+
+                            if (name.length == 0) {
+                                return alert('Please enter a tournament name');
+                            }
+
+                            let body = {};
+                            body.name = name;
+                            body.old_name = old_name;
+                            if (begin_date.length > 0) {
+                                body.begin_date = begin_date;
+                            }
+                            if (end_date.length > 0) {
+                                body.end_date = end_date;
+                            }
+                            if (registration_open.length > 0) {
+                                body.registration_open = registration_open;
+                            }
+                            if (registration_close.length > 0) {
+                                body.registration_close = registration_close;
+                            }
+                            if (venue.length > 0) {
+                                body.venue = venue;
+                            }
+                            if (venue_address.length > 0) {
+                                body.venue_address = venue_address;
+                            }
+                            if (description.length > 0) {
+                                body.description = description;
+                            }
+
+                            let res = await fetch('/admin/edit-tournament', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(body)
+                            }).then(res => res.json());
+
+                            if (res['success'] === true) {
+                                alert('Success!');
+                                document.querySelectorAll('.Create .info input').forEach(inp => {
+                                    inp.value = '';
+                                });
+                                document.querySelector('.Create .info textarea').value = '';
+                                await tournament_setup();
+                                goto(0);
+                            } else {
+                                if (res['error'] == 'authentication failed') {
+                                    location.href = '/login';
+                                }
+                                alert(res.error);
+                            }
+                        }
+                    </script>
+                </div>
+
+                <div class="View">
+
+                </div>
+
+                <div class="View Create">
+                    <input type="text" class="team-name">
+                    <button class="create" onclick="createTournamentTeam(event);">Create</button>
+                    <script>
+                        async function createTournamentTeam(event) {
+                            let team_name = event.target.parentElement.querySelector('input');
+
+                            if (team_name.value.length == 0) {
+                                return alert('Please enter a team name');
+                            }
+
+                            let res = await fetch('/admin/create-tournament-team', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    team_name: team_name.value,
+                                    tournament_name: currentViewTournament.name
+                                })
+                            }).then(res => res.json());
+
+                            if (res.success === true) {
+                                alert('Successfully created!');
+                                team_name.value = '';
+                                await tournament_setup();
+                                updateView();
+                            } else {
+                                alert(res.error);
+                            }
+                        }
+                    </script>
+                </div>
+
+                <div class="View Team">
+                    
+                </div>
+            </div>
+
+            <div class="Reset-Database" style="width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center">
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+            
+                    div.main_reset {
+                        width: 100%;
+                        height: 100%;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        flex-direction: column;
+                        gap: 1em;
+                        transition: ease-in-out .3s;
+                    }
+            
+                    div.main_reset h1 {
+                        margin: 0;
+                        padding: 0;
+                        font-size: 2em;
+                        color: rgb(10, 10, 10);
+                    }
+            
+                    div.container {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        gap: 1em;
+                        color: rgb(10, 10, 10);
+                    }
+            
+            
+                    .main_reset button {
+                        font-family: 'Lexend Peta';
+                        font-size: 1em;
+                        padding: .5em;
+                        font-weight: 600;
+                        color: rgb(250, 250, 250);
+                        background-color: rgb(223, 37, 37);
+                        border: .2em solid rgb(223, 37, 37);
+                        cursor: pointer;
+                        transition: .3s ease-in-out;
+                    }
+            
+                    .main_reset button:hover {
+                        background-color: rgb(250, 250, 250);
+                        color: rgb(223, 37, 37);
+                    }
+            
+                    @media screen and (max-width: 800px) {
+                        .main_reset {
+                            font-size: .7em;
+                        }
+                    }
+            
+                    @media screen and (max-width: 600px) {
+                        .main_reset {
+                            font-size: .6em;
+                        }
+                    }
+            
+                    @media screen and (max-width: 450px) {
+                        .main_reset {
+                            font-size: .4em;
+                        }
+                    }
+                </style>
+            
+                <div class="main_reset">
+                    <div class="container">
+                        <button onclick="reset()">RESET DATABASE</button>
+                    </div>
+                </div>
+            
+            
+                <script>
+                    async function reset() {
+            
+                        let conf = confirm('Are you sure you want to reset everything. Once this is done it CANNOT be undone!');
+            
+                        if (conf !== true) {
+                            return;
+                        }
+            
+                        let r = await fetch('/api/reset-database', {
+                            method: 'POST'
+                        }).then(res => res.json());
+            
+                        if ('success' in r && r.success === true) {
+                            alert('Successfully reset database');
+                        } else {
+                            alert('Something went wrong');
+                        }
+                    }
+            
+                    document.querySelector('.main_reset button').addEventListener('mouseover', () => {
+                        document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 75, 75)';
+                    })
+            
+                    document.querySelector('.main_reset button').addEventListener('mouseout', () => {
+                        document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 250, 250)';
+                    })
+                </script>
+            </div>
+        </div>
     </div>
 
+</body>
+<script>
 
-    <script>
+    async function setup() {
+        document.querySelector('.menu .items button.selected').dispatchEvent(new Event('click'))
+    }
 
-        async function setup() {
-            let tools = await fetch('/get-admin-tools').then(res => res.json());
+    setup();
 
-            if ('success' in tools && true) {
-                tools = tools.tools;
-                let main = document.querySelector('.main')
-                if (tools.length == 0) {
-                    // let div = 
-                } else {
-                    for (i in tools) {
-                        let a = document.createElement('a');
-                        a.setAttribute('href', '/' + tools[i])
-                        a.target = '_blank';
-                        tools[i] = tools[i].replace('-', ' ');
-                        a.innerHTML = tools[i].replace(/\b\w/g, char => char.toUpperCase());
-                        main.appendChild(a);
-                    }
-                }
-            }
+    function menuSelect(event) {
+        let page = event.target.innerHTML;
+        page = page.replace(' ', '-');
+
+        document.querySelectorAll('.page>div').forEach(div => {
+            div.classList.remove('show');
+        });
+        document.querySelectorAll('.items button').forEach(div => {
+            div.classList.remove('selected');
+        });
+
+        let d = document.querySelector('.page>div.' + page);
+        if (d !== null) {
+            d.classList.add('show');
         }
 
-        setup();
-    </script>
-</body>
+        event.target.classList.add('selected');
+    }
+</script>
 </html>

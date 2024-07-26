@@ -8,14 +8,33 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
-
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_KEY);
+
+// BCRYPT
+const bcrypt = require('bcrypt');
+const { connect } = require('http2');
+const saltRounds = 10;
+
+async function hashPassword(pwd) {
+    return (await bcrypt.hash(pwd, saltRounds));
+}
+async function comparePassword(pwd, enc) {
+    return bcrypt.compare(pwd, enc);
+}
+
+
+// hashPassword('Caleb').then(async(r) => {
+//     console.log(r);
+//     console.log(await comparePassword('Caleb', r))
+// })
 
 const pool = mysql.createPool({
     host: '127.0.0.1',
     user: 'root',
     password: process.env.MYSQL_LOGIN,
-    database: 'NCPA'
+    database: 'NCPA',
+    multipleStatements: true
 }).promise();
 
 // Reading files
@@ -62,8 +81,9 @@ function authenticate(req, res, next) {
             }
         }
 
-        jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-            if (err) {
+        jwt.verify(token, process.env.JWT_SECRET, async(err, user) => {
+            let permission = await getPermission(user.profile_id);
+            if (err || permission != 5) {
                 if (req.method === 'GET') {
                     return res.redirect('/login');
                 } else {
@@ -81,39 +101,572 @@ function authenticate(req, res, next) {
     }
 }
 
+let base_url = 'http://localhost:3000';
+
 // Routes
 
+
+// Public
+
+app.get('/', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'home.html'))
+})
+
+app.get('/players', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'players.html'))
+})
+
+app.get('/colleges', async (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'colleges.html'))
+})
+
+
+// PROFILE
 app.get('/login', async(req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'login.html'))
+    res.sendFile(path.join(__dirname, 'public', 'static', 'login.html'))
 });
 
 app.post('/login', async(req, res) => {
-    if ('password' in req.body && req.body.password === process.env.ADMIN_PASSWORD) {
-        const token = jwt.sign({'permissions': 'admin'}, process.env.JWT_SECRET, {expiresIn: '1h' });
-        res.cookie('jwtToken', token, {httpOnly: true, maxAge: 3600000});
+    try {
+        if ('password' in req.body && 'email' in req.body) {
+            let pf = (await pool.query(`SELECT * FROM Profile where email="${req.body.email}"`))[0];
+            if (pf.length === 0) {
+                return res.send({'success': false, 'error': 'We cannot find an account associated with that email address'});
+            } else {
+                pf = pf[0];
+                if ((await comparePassword(req.body.password, pf.pass)) === false) {
+                    return res.send({'success': false, 'error': 'Wrong password'});
+                } else {
+                    pf = {'role': 'user', 'profile_id': pf.profile_id};
+                    const token = jwt.sign(pf, process.env.JWT_SECRET, {expiresIn: '24h'});
+                    res.cookie('jwtToken', token, {httpOnly: true, maxAge: 24*60*60*1000});
+                    res.send({'success': true});
+                }
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+    // if ('password' in req.body && 'email' in req.body) {
+    //     const token = jwt.sign({'role': 'user'}, process.env.JWT_SECRET, {expiresIn: '1h' });
+    //     res.cookie('jwtToken', token, {httpOnly: true, maxAge: 3600000});
+    //     res.send({'success': true});
+    // } else {
+    //     res.send({'success': false});
+    // }
+});
+
+app.get('/signout', async(req, res) => {
+    try {
+        res.cookie('jwtToken', '', {httpOnly: true, expires: new Date(0)});
         res.send({'success': true});
-    } else {
+    } catch (error) {
         res.send({'success': false});
     }
 });
+
+app.get('/register', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'register.html'))
+});
+
+app.post('/register', async(req, res) => {
+    try {
+        let {fname, lname, email, password, phone_number, month, day, year, connect_key} = req.body;
+        let gen = req.body.gender;
+
+        let err = null;
+
+        if (fname.length == 0) {
+            err = 'Please enter a valid first name';
+        } else if (lname.length == 0) {
+            err = 'Please enter a valid last name';
+        } else if (email.length == 0) {
+            err = 'Please enter a valid email';
+        } else if (!email.includes('@')) {
+            err = 'Please enter a valid email';
+        } else if (password.length < 6) {
+            err = 'Your password must have at least 6 characters';
+        } else if (phone_number != null && (phone_number.length == 0 || !(phone_number.length === 10 && !isNaN(phone_number)))) {
+            err = 'Please enter a valid phone number';
+        }
+
+        month = (month.length == 1 ? '0': '') + month;
+        day = (day.length == 1 ? '0': '') + day;
+
+        if (isNaN(month) || month.length != 2) {
+            err = 'Please enter a valid month';
+        } else if (isNaN(day) || day.length != 2) {
+            err = 'Please enter a valid day';
+        } else if (isNaN(year) || year.length != 4) {
+            err = 'Please enter a valid year';
+        }
+        
+        if (!(gen === 'Male' || gen === 'Female')) {
+            err = 'Please enter a valid gender';
+        }
+
+        if (err !== null) {
+            return res.send({'success': false, 'error': err});
+        }
+
+        let hashedP = await hashPassword(password);
+
+        let r = await createProfile(fname, lname, email, hashedP, phone_number, gen, month, day, year, connect_key);
+        if (r === null) {
+            return res.send({'success': true});
+        } else {
+            return res.send({'success': false, 'error': r})
+        }
+    } catch (error) {
+        console.log(error);
+        res.send({'success': false, 'error': 'Something went wrong'})
+    }
+    // if ('password' in req.body && req.body.password === process.env.ADMIN_PASSWORD) {
+    //     const token = jwt.sign({'role': 'user'}, process.env.JWT_SECRET, {expiresIn: '1h' });
+    //     res.cookie('jwtToken', token, {httpOnly: true, maxAge: 3600000});
+    //     res.send({'success': true});
+    // } else {
+    //     res.send({'success': false});
+    // }
+});
+
+app.get('/profile', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'profile.html'));
+});
+
+app.get('/me', async(req, res) => {
+    try {
+        if (!('jwtToken' in req.cookies)) {
+            return res.redirect('/login');
+        } else {
+            let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+            
+            if (user === null) {
+                return res.redirect('/login');
+            } else {
+                info = {}
+                if (typeof(user.profile_id) == 'undefined') {
+                    return res.redirect('/login');
+                }
+                player = (await pool.query(`SELECT * FROM Profile where profile_id=${user.profile_id}`))[0][0];
+                
+                if (typeof(player) == 'undefined') {
+                    return res.redirect('/login');
+                }
+                delete player['pass'];
+                delete player['connect_key'];
+
+                past_matches = (await pool.query(`
+                    SELECT m.*, 
+                           (SELECT GROUP_CONCAT(mtp.profile_id)
+                            FROM MatchTeamPlayer mtp
+                            WHERE mtp.team_id = m.t1_id) as profile_ids_t1,
+                            (SELECT GROUP_CONCAT(mtp.profile_id)
+                            FROM MatchTeamPlayer mtp
+                            WHERE mtp.team_id = m.t2_id) as profile_ids_t2
+                    FROM \`Match\` m
+                    WHERE EXISTS (SELECT 1 
+                                  FROM MatchTeamPlayer mtp 
+                                  WHERE (mtp.team_id = m.t1_id OR mtp.team_id = m.t2_id) 
+                                  AND mtp.profile_id = ${player.profile_id})
+                    ORDER BY m.time DESC
+                    ${('more_matches' in req.query && req.query.more_matches == 'true') ? '' : 'LIMIT 3'};
+                `))[0];
+
+
+                const player_teams = (await pool.query(`
+                    SELECT 
+                        TT.tournament_team_id,
+                        TT.name AS team_name,
+                        TT.tournament,
+                        TT.points,
+                        TT.placement,
+                        GROUP_CONCAT(CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) ORDER BY TTM.profile_id SEPARATOR ',') AS team_members
+                    FROM 
+                        TournamentTeam TT
+                    JOIN 
+                        TournamentTeamMember TTM ON TT.tournament_team_id = TTM.tournament_team_id
+                    JOIN 
+                        Tournament T ON TT.tournament = T.name
+                    WHERE 
+                        TT.tournament_team_id IN (
+                            SELECT DISTINCT TTM2.tournament_team_id 
+                            FROM TournamentTeamMember TTM2
+                            WHERE TTM2.profile_id = ${player.profile_id}
+                        )
+                    GROUP BY 
+                        TT.tournament_team_id, TT.name, TT.tournament, TT.points, TT.placement
+                    ORDER BY 
+                        TT.tournament_team_id;
+                `))[0];
+
+                const player_tournaments = (await pool.query(`
+                    SELECT
+                        tournament_team_member_id,
+                        tournament_team_id,
+                        tournament,
+                        captain,
+                        player
+                    FROM TournamentTeamMember WHERE
+                        profile_id=${player.profile_id};
+                `))[0];
+
+                const requests = (await pool.query(`
+                    SELECT
+                        request_id,
+                        tournament_team,
+                        tournament,
+                        profile_id
+                    FROM TournamentTeamRequest
+                    WHERE profile_id=${user.profile_id}
+                `))[0];
+
+                const captain_requests = (await pool.query(`
+                    SELECT
+                        TT.name,
+                        TT.tournament,
+                        GROUP_CONCAT(TTR.profile_id) AS requests,
+                        GROUP_CONCAT(TTR.request_id) AS request_ids
+                    FROM TournamentTeam TT
+                    JOIN TournamentTeamMember TTM
+                    JOIN TournamentTeamRequest TTR ON TTR.tournament_team=TT.name AND TTR.tournament=TT.tournament
+                    WHERE TTM.profile_id=${player.profile_id} AND TTM.captain=1
+                    GROUP BY TT.name, TT.tournament
+                `))[0];
+
+                info['player'] = player;
+                info['past_matches'] = past_matches;
+                info['player_teams'] = player_teams;
+                info['player_tournaments'] = player_tournaments;
+                info['requests'] = requests;
+                info['captain_requests'] = captain_requests;
+                
+                return res.send({'success': true, info})
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+});
+
+
+async function refund(stripe_session_id, metadata) {
+    try {
+        const session = await stripe.checkout.sessions.retrieve(stripe_session_id);
+        const refund = await stripe.refunds.create({
+          payment_intent: session.payment_intent
+        });
+        if (refund.status === 'succeeded') {
+            console.log('Refund successful');
+            return true;
+        } else {
+            throw new Error('');
+        }
+    } catch (error) {
+        console.error('Error creating refund:', error);
+        try {
+            let r = (await pool.query(`INSERT INTO Log(message) VALUES("Something went wrong when trying to refund ${metadata.profile_id} for tournament [${metadata.tournament}] (${stripe_session_id})")`));
+        } catch (error) {
+            console.log('Error when logging refund error')
+        }
+        return false;
+    }
+}
+
+app.get('/success', async(req, res) => {
+    try {
+
+        let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
+        if (tm.length == 0) {
+            const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+
+            if (session.status === 'complete' && session.payment_status === 'paid') {
+                let pid = session.metadata.profile_id;
+                let tournament = session.metadata.tournament;
+
+                let tm_old = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(tournament)}`))[0];
+
+                if (tm_old.length == 0) {  // New Player
+                    r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player, stripe_session_id) VALUES("${tournament}", ${pid}, 1, ${pool.escape(req.query.session_id)})`))[0];
+
+                    if (r.affectedRows === 0) {
+                        // Refund - Something went wrong
+                        let refund_status = await refund(req.query.session_id, session.metadata);
+                        console.log(refund_status);
+                        return res.redirect('/');
+                    }
+
+                    return res.sendFile(path.join(__dirname, 'public', 'static', 'success.html'));
+                } else {  // Player in tournament
+                    tm_old = tm_old[0];
+                    if (tm_old.player == 1) {  // Player already registered
+                        // Refund - Player already registered
+                        let refund_status = await refund(req.query.session_id, session.metadata);
+                        console.log(refund_status);
+                        return res.redirect('/');
+                    } else {  // Captain but not player
+                        console.log('Captain but not player')
+                        let r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament_team_member_id=${pool.escape(tm_old.tournament_team_member_id)}`))
+                        
+                        if (r.affectedRows === 0) {
+                            // Refund - Something went wrong
+                            let refund_status = await refund(req.query.session_id, session.metadata);
+                            console.log(refund_status);
+                            return res.redirect('/');
+                        }
+
+                        return res.sendFile(path.join(__dirname, 'public', 'static', 'success.html'));
+                    }
+                }
+                
+            }
+        } else {  // Link used
+            res.redirect('/');
+        }
+
+    } catch (error) {
+        console.log(error)
+        res.redirect('/');
+    }
+
+
+    // try {
+    //     // const result = await Promise.all([
+    //     //     stripe.checkout.sessions.retrieve(req.query.session_id),
+    //     //     stripe.checkout.sessions.listLineItems(req.query.session_id)
+    //     // ])
+
+    //     // const session = result[0];
+    //     // const lineItems = result[1];
+    //     const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+    //     if (session.status === 'complete' && session.payment_status === 'paid' && session.metadata.set == 0) {
+    //         let pid = session.metadata.profile_id;
+    //         let tournament = session.metadata.tournament;
+    //         console.log('hi')
+    //         const update = await stripe.checkout.sessions.update(req.query.session_id, {
+    //             metadata: {
+    //                 set: 1
+    //             }
+    //         });
+    //         console.log('2')
+    //         try {
+    //             r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player) VALUES("${tournament}", ${pid}, 1)`))[0];
+    //             return res.sendFile(path.join(__dirname, 'public', 'static', 'success.html'));
+    //         } catch (error) {
+    //             if (error.code === 'ER_DUP_ENTRY') {
+    //                 let p = (await pool.query(`SELECT player FROM TournamentTeamMember WHERE tournament="${tournament}" AND profile_id=${pid};`))[0][0];
+    //                 console.log(p);
+    //                 r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament="${tournament}" AND profile_id=${pid};`))[0];
+    //                 // console.log(r);
+    //                 if (r.affectedRows === 0) {
+
+    //                     return res.redirect('/');
+    //                 } else {
+    //                     return res.sendFile(path.join(__dirname, 'public', 'static', 'success.html'));
+    //                 }
+    //             } else {
+    //                 console.log(error)
+    //                 // Refund
+    //                 console.log('Refund')
+    //                 return res.redirect('/');
+    //             }
+    //         }
+
+    //     }
+    //     return res.redirect('/')
+    // } catch (error) {
+    //     console.log(error)
+    //     return res.redirect('/')
+    // }
+});
+
+
+// Admin
 
 app.get('/admin', authenticate, async(req, res) => {
     res.sendFile(path.join(__dirname, 'admin', 'admin.html'))
 })
 
-app.get('/merge-players', authenticate, async(req, res) => {
+app.post('/admin/create-tournament', authenticate, async(req, res) => {
+    try {
+        if (req.body.name.length == 0) {
+            res.send({'success': false, 'error': 'Please enter a name'});
+        }
+        keys = [];
+        values = [];
+        for (key in req.body) {
+            keys.push(key);
+            values.push(typeof(req.body[key]) === typeof('') ? `"${req.body[key]}"` : req.body[key])
+        }
+
+        let query = `INSERT INTO Tournament(${keys.join(', ')}) VALUES(${values.join(', ')})`;
+        
+        let r = (await pool.query(query))[0];
+
+        if (r.affectedRows != 0) {
+            return res.send({'success': true});
+        } else {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+    } catch (error) {
+        if (error.code == 'ER_DUP_ENTRY') {
+            return res.send({'success': false, 'error': 'A tournament with that name already exists'});
+        }
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+
+})
+
+app.post('/admin/delete-tournament', authenticate, async(req, res) => {
+    try {
+        let r = (await pool.query(`DELETE FROM Tournament WHERE name="${req.body.name}"`))[0];
+        if (r.affectedRows != 0) {
+            return res.send({'success': true});
+        } else {
+            throw new Error('');
+        }
+    } catch (error) {
+        res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
+app.post('/admin/edit-tournament', authenticate, async(req, res) => {
+    try {
+        if (req.body.name.length == 0) {
+            res.send({'success': false, 'error': 'Please enter a name'});
+        }
+        keys = [];
+        values = [];
+        for (key in req.body) {
+            if (key != 'old_name') {
+                keys.push(key);
+                values.push(typeof(req.body[key]) === typeof('') ? `"${req.body[key]}"` : req.body[key])    
+            }
+        }
+
+        let query = `UPDATE Tournament SET `;
+        for (i in keys) {
+            if (i != 0) {
+                query += ', ' + keys[i] + '=' + values[i];
+            } else {
+                query += keys[i] + '=' + values[i];
+            }
+        }
+
+        query += ` WHERE name="${req.body.old_name}"`;
+        
+        let r = (await pool.query(query))[0];
+
+        if (r.affectedRows == 1) {
+            res.send({'success': true});
+        } else {
+            res.send({'success': false, 'error': 'Something went wrong'});
+        }
+    } catch (error) {
+        console.log(error);
+        res.send({'success': false, 'error': 'Something went wrong'})
+    }
+});
+
+app.post('/admin/create-tournament-team', authenticate, async(req, res) => {
+    try {
+        if (!('team_name' in req.body) | req.body.team_name.length == 0 | !('tournament_name' in req.body) | req.body.tournament_name.length == 0) {
+            throw new Error('');
+        }
+
+        let r = (await pool.query(`INSERT INTO TournamentTeam(name, tournament) VALUES("${req.body.team_name}", "${req.body.tournament_name}")`))[0];
+
+        if (r.affectedRows == 1) {
+            res.send({'success': true});
+        } else {
+            res.send({'success': false, 'error': 'Something went wrong'});
+        }
+    } catch (error) {
+        console.log(error);
+        res.send({'success': false, 'error': 'Something went wrong'})
+    }
+})
+
+app.get('/admin/get-tournaments', authenticate, async(req, res) => {
+    try {
+        let current = (await pool.query(`
+            SELECT *
+            FROM Tournament
+            WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            ORDER BY begin_date DESC;
+        `))[0];
+        let past = (await pool.query(`
+            SELECT *
+            FROM Tournament
+            WHERE end_date < DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            ORDER BY begin_date DESC;
+        `))[0];
+        let upcoming = (await pool.query(`
+            SELECT *
+            FROM Tournament
+            WHERE begin_date > DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            ORDER BY begin_date ASC;
+        `))[0];
+        let tbd = (await pool.query(`
+            SELECT *
+            FROM Tournament
+            WHERE begin_date IS NULL OR end_date IS NULL;
+        `))[0];
+
+        let teams = (await pool.query(`
+            SELECT * FROM TournamentTeam;
+        `))[0];
+
+        let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'tbd': tbd, 'teams': teams};
+        res.send({'success': true, 'tournaments': tournaments})
+    } catch (error) {
+        console.log(error)
+        res.send({'success': false, 'error': 'Something went wrong'})
+    }
+});
+
+app.post('/admin/generate-new-team-captiain-key', authenticate, async(req, res) => {
+    try {
+        let key = '';
+        while (true) {
+            key = generateConnectKey();
+            if ((await pool.query('SELECT * FROM TournamentTeam where captain_key="' + key + '";'))[0].length == 0) {
+                break;
+            }
+        }
+        if (key.length === 0) {
+            throw new Error('');
+        }
+
+        let r = (await pool.query(`UPDATE TournamentTeam SET captain_key="${key}" WHERE tournament_team_id=${req.body.team_id} AND tournament="${req.body.tournament}"`))[0];
+
+        if (r.affectedRows == 1) {
+            res.send({'success': true, 'key': key});
+        } else {
+            res.send({'success': false, 'error': 'Something went wrong'});
+        }
+    } catch (error) {
+        console.log(error);
+        res.send({'success': false, 'error': 'Something went wrong'})
+    }
+})
+
+app.get('/admin/merge-players', authenticate, async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
 })
 
-app.get('/upload-tournament', authenticate, async(req, res) => {
+app.get('/admin/upload-tournament', async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'upload-tournament.html'))
 })
 
-app.get('/reset-database', authenticate, async(req, res) => {
+app.get('/admin/reset-database', authenticate, async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'reset-database.html'));
 })
 
-app.get('/get-admin-tools', authenticate, async(req, res) => {
+app.get('/admin/get-admin-tools', authenticate, async(req, res) => {
     filesR = await fs.readdir(path.join(__dirname, 'admin'));
 
     names = [];
@@ -131,78 +684,10 @@ app.get('/get-admin-tools', authenticate, async(req, res) => {
 })
 
 app.get('/ss', authenticate, async(req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'singles-simulator.html'));
+    res.sendFile(path.join(__dirname, 'public', 'static', 'singles-simulator.html'));
 })
 
 // API
-
-// app.post('/create-profile', async (req, res) => {
-//     try {
-//         const {first_name, last_name, college, email, phone_number} = req.body;
-//         if (first_name.length == 0) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (last_name.length == 0) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (college.length == 0) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (email.length == 0) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (phone_number.length == 0) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         }
-
-//         if (first_name.length > 20) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (last_name.length > 30) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (college.length > 100) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (email.length > 50) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         } else if (phone_number.length > 20 || isNaN(phone_number)) {
-//             res.send({'success': false, 'error': 'Something went wrong'});
-//             return;
-//         }
-
-//         if (colleges.indexOf(college) != -1) {
-//             pool.query(`INSERT INTO Player(first_name, last_name, college, email, phone_number) VALUES ("${first_name}", "${last_name}", "${college}", "${email}", "${phone_number}");`).then(r => {
-//                 res.send({'success': true});
-//             }).catch(err => {
-//                 try {
-//                     err = err['sqlMessage'].toLowerCase();
-//                     if (err.includes('duplicate')) {
-//                         if (err.includes('phone_number')) {
-//                             res.send({'success': false, 'error': 'An account with that phone number already exists'});
-//                         } else if (err.includes('email')) {
-//                             res.send({'success': false, 'error': 'An account with that email already exists'});
-//                         } else {
-//                             res.send({'success': false, 'error': 'Something went wrong'});
-//                         }
-//                     } else {
-//                         res.send({'success': false, 'error': 'Something went wrong'});
-//                     }
-//                 } catch(error) {
-//                     console.log(error);
-//                     res.send({'success': false, 'error': 'Something went wrong'});;
-//                 }
-//             })
-//         } else {
-//             res.send({'success': false, 'error': 'Please enter a valid college'});
-//             return;
-//         }
-//     } catch (error) {
-//         res.send({'success': false});
-//     }
-// });
 
 app.post('/api/simulator', async(req, res) => {
     try {
@@ -231,67 +716,6 @@ app.get('/api/colleges', async(req, res) => {
     }
 })
 
-// app.get('/api/tournaments', async(req, res) => {
-//     if (Object.keys(req.query).length == 0) {
-//         try {
-//             let tournaments = await pool.query('SELECT tournament_id, name, location, date FROM Tournament;');
-//             res.send({'success': 'true', 'tournaments': tournaments[0]})
-//         } catch (error) {
-//             res.send({'success': 'false'})
-//             return;
-//         }
-//     } else {
-//         try {
-//             if ('tournament_id' in req.query) {
-
-//                 let tournament_info = (await pool.query(`
-//                     SELECT tournament_id, name, location, date
-//                     FROM Tournament
-//                     WHERE tournament_id=${req.query.tournament_id}
-//                 `))[0][0];
-
-//                 let players = (await pool.query(`
-//                     SELECT Player.first_name, Player.last_name, Player.singles_rating, Player.doubles_rating
-//                     FROM TournamentPlayer
-//                     JOIN Player ON TournamentPlayer.player_id = Player.player_id
-//                     WHERE tournament_id=${req.query.tournament_id};
-//                 `))[0];
-
-//                 let tournament_teams = (await pool.query(`
-//                     SELECT 
-//                         player1.first_name AS p1_first_name,
-//                         player1.last_name AS p1_last_name, 
-//                         player2.first_name AS p2_first_name, 
-//                         player2.last_name AS p2_last_name,
-//                         team_name,
-//                         TeamType.id AS team_type
-//                     FROM TournamentTeam
-//                     JOIN TournamentPlayer AS TP1 ON TournamentTeam.player1_id = TP1.tournament_player_id
-//                     JOIN Player AS player1 ON TP1.player_id = player1.player_id
-//                     JOIN TournamentPlayer AS TP2 ON TournamentTeam.player2_id = TP2.tournament_player_id
-//                     JOIN Player AS player2 ON TP2.player_id = player2.player_id
-//                     JOIN TeamType ON TournamentTeam.team_type_id = TeamType.id
-//                     WHERE TournamentTeam.tournament_id=${req.query.tournament_id}
-//                 `))[0];
-                
-//                 // let tournament_matches = (await pool.query(`
-//                 //     SELECT
-//                 //         TT1.player1_id
-//                 //     FROM TournamentMatch
-//                 //     JOIN TournamentTeam AS TT1 ON TournamentMatch.team1 = TT1.tournament_team_id
-//                 //     WHERE TournamentMatch.tournament_id=${req.query.tournament_id};
-//                 // `));
-                
-//                 // console.log(tournament_matches);
-                
-//                 res.send({'success': true, 'tournament_id': tournament_info.tournament_id, 'name': tournament_info.name, 'location': tournament_info.location, 'date': tournament_info.date, 'players': players, 'tournament_teams': tournament_teams})
-//             }
-//         } catch (error) {
-//             res.send({'success': false})
-//         }
-//     }
-// })
-
 app.post('/api/merge', authenticate, async(req, res) => {
     try {
         console.log(req.body);
@@ -309,7 +733,7 @@ app.post('/api/merge', authenticate, async(req, res) => {
     }
 })
 
-app.post('/api/upload-tournament', authenticate, upload.single('file'), async (req, res) => {
+app.post('/api/upload-tournament', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.send({'success': false, 'error': 'No file uploaded'});
@@ -321,7 +745,7 @@ app.post('/api/upload-tournament', authenticate, upload.single('file'), async (r
             return res.send({'success': false})
         }
 
-        const r = await enterAllTournamentInfo(req.body.name, req.body.location, req.body.date, req.body.multiplier, info);
+        const r = await enterAllTournamentInfo(req.body.name, req.body.venue, req.body.multiplier, info);
         
         fs.unlink(req.file.path, (err) => {
             if (err) {
@@ -352,11 +776,399 @@ app.post('/api/reset-database', authenticate, async(req, res) => {
     }
 
     return res.send({'success': false});
+});
+
+
+
+
+// Tournament
+
+app.get('/api/get-tournaments', async(req, res) => {
+    try {
+        let to_grab = 'name, venue, venue address, registration_open, registration_close, begin_date, end_date, description';
+
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+
+        if (user === null || !('profile_id' in user)) {
+            throw new Error('');
+        }
+
+        let r = await Promise.all([
+            pool.query(`
+                SELECT ${to_grab}
+                FROM Tournament
+                WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                ORDER BY begin_date DESC;
+            `),
+
+            pool.query(`
+                SELECT ${to_grab}
+                FROM Tournament
+                WHERE end_date < DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                ORDER BY begin_date DESC;
+            `),
+
+            pool.query(`
+                SELECT ${to_grab}
+                FROM Tournament
+                WHERE begin_date > DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                ORDER BY begin_date ASC;
+            `),
+            
+            pool.query(`
+                SELECT
+                    T.name AS tournament_name,
+                    GROUP_CONCAT(TT.name SEPARATOR ' ;; ') AS team_names
+                FROM TournamentTeamMember TTM
+                JOIN Tournament T ON TTM.tournament = T.name
+                JOIN TournamentTeam TT ON TT.tournament = T.name
+                WHERE TTM.profile_id = ${user.profile_id}
+                GROUP BY T.name
+            `),
+
+        ]);
+
+
+        let current = r[0][0];
+        let past = r[1][0];
+        let upcoming = r[2][0];
+        let teams = r[3][0];
+
+        let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'teams': teams};
+        res.send({'success': true, 'tournaments': tournaments})
+
+    } catch (error) {
+        console.log(error);
+        return res.send({'success': false, 'error': 'Something went wrong'})
+    }
 })
+
+app.post('/api/register-for-tournament', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+            
+        if (user === null || user.profile_id === null) {
+            return res.send({'success': false, 'error': 'Please log in first'});
+        }
+
+        let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE profile_id=${pool.escape(user.profile_id)} AND tournament=${pool.escape(req.body.tournament)} AND player=1`))[0];
+
+        if (tm.length > 0) {
+            return res.send({'success': false, 'error': 'You are already registered for this tournament'});
+        }
+
+        tournament = (await pool.query(`SELECT * FROM Tournament WHERE name="${req.body.tournament}"`))[0][0];
+        
+        let now = new Date();
+        now = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+
+        if (tournament.registration_open === null || tournament.registration_close === null) {
+            return res.send({'success': false, 'error': 'Registration is not open for ' + tournament.name})
+        }
+
+        
+        let ro = new Date(tournament.registration_open);
+        ro.setHours(0, 0, 0, 0);
+        let rc = new Date(tournament.registration_close);
+        rc.setHours(23, 59, 59, 999);
+
+        if (!(now >= ro && now <= rc)) {
+            return res.send({'success': false, 'error': 'Registration is not open for ' + tournament.name})
+        }
+        
+        const session = await stripe.checkout.sessions.create({
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `Registration for ${tournament.name}`
+                        },
+                        unit_amount: 50*100  // Price
+                    },
+                    quantity: 1
+                }
+            ],
+            mode: 'payment',
+            success_url: `${base_url}/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${base_url}/`,
+            metadata: {
+                profile_id: user.profile_id,
+                tournament: tournament.name
+            }
+        });
+
+        // console.log(session);
+
+        return res.send({'success': true, 'url': session.url});
+    } catch (error) {
+        console.log('ERROR');
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+
+    // return res.send({'success': false})
+})
+
+app.post('/api/become-captain', async(req, res) => {
+    try {
+        if (!('jwtToken' in req.cookies)) {
+            return res.send({'success': false, 'error': 'authentication failed'})
+        }
+
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+        
+        if (user === null) {
+            return res.send({'success': false, 'error': 'authentication failed'})
+        }
+
+        let tm = (await pool.query(`SELECT tournament_team_id FROM TournamentTeamMember WHERE tournament=${pool.escape(req.body.t_name)} AND profile_id=${pool.escape(user.profile_id)}`))[0];
+
+        let r = (await pool.query(`SELECT * FROM TournamentTeam WHERE tournament=${pool.escape(req.body.t_name)} AND captain_key=${pool.escape(req.body.captain_key)}`))[0];
+
+        if (r.length === 0) {
+            return res.send({'success': false, 'error': "Sorry we can't find a team with that captain key for " + req.body.t_name});
+        }
+
+        if (tm.length > 0 && tm[0].tournament_team_id != null && tm[0].tournament_team_id != r[0].tournament_team_id) {
+            return res.send({'success': false, 'error': 'You cannot be in two teams at the same time'});
+        }
+
+        try {
+            r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament_team_id, tournament, profile_id, captain) VALUES(${r[0].tournament_team_id}, "${req.body.t_name}", ${user.profile_id}, 1)`))[0];
+        } catch (error) {
+            if (error.code === 'ER_DUP_ENTRY') {
+                r = (await pool.query(`UPDATE TournamentTeamMember SET tournament_team_id=${pool.escape(r[0].tournament_team_id)}, captain=1 WHERE tournament="${req.body.t_name}" AND profile_id=${user.profile_id};`))[0];
+            } else {
+                throw error;
+            }
+        }
+
+        if (r.affectedRows == 0) {
+            throw new Error('');
+        } else {
+            return res.send({'success': true});
+        }
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
+app.post('/api/send-team-request', async(req, res) => {
+    try {
+
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+        console.log(req.body)
+        if (user === null || !('profile_id' in user)) {
+            return res.send({'success': false, 'error': 'authentication failed'})
+        }
+        
+        let r = null;
+        if (req.body.request === 0) {
+            r = (await pool.query(`
+                DELETE FROM TournamentTeamRequest WHERE profile_id=${pool.escape(user.profile_id)} AND tournament_team="${req.body.team_name}" AND tournament="${req.body.t_name}";
+            `))[0];
+        } else {
+            r = (await pool.query(`
+                INSERT INTO TournamentTeamRequest(profile_id, tournament_team, tournament) VALUES(${user.profile_id}, "${req.body.team_name}", "${req.body.t_name}");
+            `))[0];
+        }
+
+        if (r.affectedRows == 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        } else {
+            if ('insertId' in r) {
+                return res.send({'success': true, 'insertId': r.insertId});
+            }
+            return res.send({'success': true})
+        }
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.send({'success': false, 'error': 'You have already sent a request to join a team in this tournament'});
+        }
+        return res.send({'success': false, 'error': 'Something went wrong'})
+    }
+})
+
+app.post('/api/remove-player-from-team', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+        
+        if (user === null) {
+            return res.send({'success': false, 'error': 'Please log in'});
+        }
+
+        // Verify captain
+        let tm = (await pool.query(`
+            SELECT * FROM TournamentTeamMember TTM
+            JOIN TournamentTeam TT ON TTM.tournament_team_id=TT.tournament_team_id
+            WHERE TTM.tournament=${pool.escape(req.body.t_name)} AND TT.name=${pool.escape(req.body.team_name)} AND TTM.profile_id=${user.profile_id}
+        `))[0][0];
+
+        if (tm.captain === 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+
+        let r = (await pool.query(`
+            UPDATE TournamentTeamMember TTM
+            JOIN TournamentTeam TT ON TT.tournament_team_id=TTM.tournament_team_id
+            SET TTM.captain=0, TTM.tournament_team_id=NULL
+            WHERE TT.name=${pool.escape(req.body.team_name)} AND TT.tournament=${pool.escape(req.body.t_name)} AND TTM.profile_id=${pool.escape(req.body.pid)}
+        `))[0];
+        
+        if (r.affectedRows == 0) {
+            throw new Error('');
+        } else {
+            let tm = (await pool.query(`
+                SELECT captain, player, tournament_team_member_id FROM TournamentTeamMember WHERE tournament=${pool.escape(req.body.t_name)} AND profile_id=${pool.escape(req.body.pid)}; 
+            `))[0][0];
+            if (tm.player == 0 && tm.captain == 0) {
+                r = (await pool.query(`DELETE FROM TournamentTeamMember WHERE tournament_team_member_id=${tm.tournament_team_member_id}`))[0];
+            }
+            if (r.affectedRows == 0) {
+                return res.send({'success': false, 'error': error});
+            } else {  
+                return res.send({'success': true});
+            }
+        }
+
+    } catch (error) {
+        console.log(error)
+        res.send({'success': false, 'error': error});
+    }
+
+})
+
+app.post('/api/change-request-status', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, process.env.JWT_SECRET);
+        
+        if (user === null) {
+            return res.send({'success': false, 'error': 'Please log in'});
+        }
+
+        // Verify captain
+        let tm = (await pool.query(`
+            SELECT * FROM TournamentTeamMember TTM
+            JOIN TournamentTeam TT ON TTM.tournament_team_id=TT.tournament_team_id
+            WHERE TTM.tournament=${pool.escape(req.body.t_name)} AND TT.tournament_team_id=${pool.escape(req.body.team_id)} AND TTM.profile_id=${user.profile_id}
+        `))[0][0];
+
+        if (tm.captain === 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+
+        let cap = 0;
+        if (req.body.accept === 1) {
+            let tm = (await pool.query(`
+                SELECT tournament_team_member_id, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(req.body.pid)} AND tournament=${pool.escape(req.body.t_name)};
+            `))[0][0];
+            cap = tm.captain;
+            let r = await pool.query(`
+                UPDATE TournamentTeamMember SET tournament_team_id=${pool.escape(req.body.team_id)} WHERE tournament_team_member_id=${pool.escape(tm.tournament_team_member_id)};
+            `)
+            if (r.affectedRows === 0) {
+                throw new Error('');
+            }
+        }
+
+        let r = (await pool.query(`
+            DELETE FROM TournamentTeamRequest WHERE request_id=${pool.escape(req.body.request_id)};
+        `))[0];
+
+        if (r.affectedRows === 0) {
+            res.send({'success': false, 'error': 'Request doesn\'t exist'});
+        } else {
+            res.send({'success': true, 'cap': cap});
+        }
+    } catch (error) {
+        console.log(error)
+        res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
+
+
+
 
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`);
 });
+
+
+
+
+
+
+
+
+// Functions
+
+
+async function createProfile(fname, lname, email, password, phone_number, gen, month, day, year, connect_key=null) {
+    try {
+        if (connect_key === null) {
+            let key = '';
+            while (true) {
+                key = generateConnectKey();
+                if ((await pool.query('SELECT * FROM Profile where connect_key="' + key + '";'))[0].length == 0) {
+                    break;
+                }
+            }
+            if (key.length === 0) {
+                return 'Something went wrong';
+            }
+            let r = await pool.query(`INSERT INTO Profile(first_name, last_name, email, pass, phone_number, gender, birthday, connect_key) VALUES("${fname}", "${lname}", "${email}", "${password}", ${phone_number === null ? null : `"${phone_number}"`}, "${gen}", "${year + '-' + month + '-' + day}", "${key}");`);
+            if (r[0].affectedRows == 1) {
+                return null;
+            } else {
+                return 'Something went wrong';
+            }
+        } else {
+            let profile = (await pool.query('SELECT * FROM Profile where connect_key="' + connect_key + '";'))[0];
+            if (profile.length === 0) {
+                return 'Invalid connect key';
+            } else {
+                profile = profile[0];
+            }
+
+            let new_key = generateConnectKey();
+
+            let r = await pool.query(`UPDATE Profile SET first_name="${fname}", last_name="${lname}", email="${email}", pass="${password}", phone_number=${phone_number === null ? null : `"${phone_number}"`}, gender="${gen}", birthday="${year + '-' + month + '-' + day}", connect_key="${new_key}" WHERE profile_id=${profile.profile_id};`);
+            if (r[0].affectedRows == 1) {
+                return null;
+            } else {
+                return 'Something went wrong';
+            }
+        }
+    } catch (error) {
+        console.log(error)
+        if (error.code == 'ER_DUP_ENTRY') {
+            if (error.sqlMessage.includes('profile.email')) {
+                return 'An account with that email already exists';
+            } else {
+                return 'An account with that phone number already exists';
+            }
+        } else {
+            return 'Something went wrong';
+        }
+    }
+}
+
+async function getPermission(id) {
+    try {
+        let pr = (await pool.query('SELECT permission FROM Profile WHERE profile_id=' + id))[0][0];
+        return pr.permission;
+    } catch {
+        return null
+    }
+}
+
+async function checkProfileLogin(email, password) {
+    console.log(email, password)
+}
+
+
 
 function calculatePWW(winner_rating, loser_rating, k=3) {
     // let pct = 1/(1 + 10 ** ((p2 - p1)*k));
@@ -400,11 +1212,6 @@ async function calculateRatingChange(t1score, t2score, t1_rating, t2_rating, mul
     return [t1_change, t2_change];
 }
 
-// calculateRatingChange(11, 9, 3.925, 4.496, .2, log=true).then(res => {
-//     console.log(res);
-//     exit();
-// })
-
 
 // min=.3, total_games=5, multi=.2
 
@@ -420,7 +1227,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
 
         if (doubles) {
             for (let i = 0; i < t1_ids.length; i++) {
-                await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE profile_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -429,7 +1236,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
                 })
             }
             for (let i = 0; i < t2_ids.length; i++) {
-                await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE profile_id = ${t2_ids[i]}`).then(res => {
                     t2_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -439,7 +1246,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
             }
         } else {
             for (let i = 0; i < t1_ids.length; i++) {
-                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE profile_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].singles_rating;
                     if (res[0][0].singles_games_played >= 5) {
                         eligible_players += 1;
@@ -448,7 +1255,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
                 })
             }
             for (let i = 0; i < t2_ids.length; i++) {
-                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE profile_id = ${t2_ids[i]}`).then(res => {
                     t2_rating += res[0][0].singles_rating;
                     if (res[0][0].singles_games_played >= 5) {
                         eligible_players += 1;
@@ -477,7 +1284,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
 
         for (let i = 0; i < t1_ids.length; i++) {
             if (doubles) {
-                let r = await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`);
+                let r = await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE profile_id = ${t1_ids[i]}`);
                 let gp = r[0][0].doubles_games_played;
                 r = r[0][0].doubles_rating;
                 if (match_eligibility || gp < 5) {
@@ -486,7 +1293,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
                     t1_new_ratings.push(r);
                 }
             } else {
-                let r = await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`);
+                let r = await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE profile_id = ${t1_ids[i]}`);
                 let gp = r[0][0].singles_games_played;
                 r = r[0][0].singles_rating;
                 if (match_eligibility || gp < 5) {
@@ -499,7 +1306,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
 
         for (let i = 0; i < t2_ids.length; i++) {
             if (doubles) {
-                let r = await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`);
+                let r = await pool.query(`SELECT doubles_rating, doubles_games_played FROM Player WHERE profile_id = ${t2_ids[i]}`);
                 let gp = r[0][0].doubles_games_played;
                 r = r[0][0].doubles_rating;
                 if (match_eligibility || gp < 5) {
@@ -508,7 +1315,7 @@ async function simulateMatch(t1score, t2score, t1_ids, t2_ids, min=.3, total_gam
                     t2_new_ratings.push(r);
                 }
             } else {
-                let r = await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`);
+                let r = await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE profile_id = ${t2_ids[i]}`);
                 let gp = r[0][0].singles_games_played;
                 r = r[0][0].singles_rating;
                 if (match_eligibility || gp < 5) {
@@ -552,73 +1359,43 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
 
         let log = null;
 
-        // t1_ids.push(match.t1p1_id);
-        // t2_ids.push(match.t2p1_id);
-        // if (doubles) {
-        //     t1_ids.push(match.t1p2_id);
-        //     t2_ids.push(match.t2p2_id);
-            
-
-        //     for (let i = 0; i < t1_ids.length; i++) {
-        //         await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
-        //             if (res[0][0].last_name == 'Schaunaman') {
-        //                 log = 1;
-        //             }
-        //             t1_rating += res[0][0].doubles_rating;
-        //             if (res[0][0].doubles_games_played >= 5) {
-        //                 eligible_players += 1;
-        //             }
-        //             total_players += 1
-        //         })
-        //     }
-        //     for (let i = 0; i < t2_ids.length; i++) {
-        //         await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
-        //             if (res[0][0].last_name == 'Schaunaman') {
-        //                 log = 2;
-        //             }
-        //             t2_rating += res[0][0].doubles_rating;
-        //             if (res[0][0].doubles_games_played >= 5) {
-        //                 eligible_players += 1;
-        //             }
-        //             total_players += 1
-        //         })
-        //     }
-        // } else {
-        //     for (let i = 0; i < t1_ids.length; i++) {
-        //         await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
-        //             t1_rating += res[0][0].singles_rating;
-        //             if (res[0][0].singles_games_played >= 5) {
-        //                 eligible_players += 1;
-        //             }
-        //             total_players += 1
-        //         })
-        //     }
-        //     for (let i = 0; i < t2_ids.length; i++) {
-        //         await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
-        //             t2_rating += res[0][0].singles_rating;
-        //             if (res[0][0].singles_games_played >= 5) {
-        //                 eligible_players += 1;
-        //             }
-        //             total_players += 1
-        //         })
+        // for (let i = 1; i < 5; i++) {
+        //     if (match[`t1p${i}_id`] !== null) {
+        //         t1_ids.push(match[`t1p${i}_id`]);
         //     }
         // }
 
-        for (let i = 1; i < 5; i++) {
-            if (match[`t1p${i}_id`] !== null) {
-                t1_ids.push(match[`t1p${i}_id`]);
-            }
+        // for (let i = 1; i < 5; i++) {
+        //     if (match[`t2p${i}_id`] !== null) {
+        //         t2_ids.push(match[`t2p${i}_id`]);
+        //     }
+        // }
+
+        t1_ids = (await pool.query(`
+            SELECT mtp.*
+            FROM MatchTeamPlayer AS mtp
+            JOIN MatchTeam AS mt ON mtp.team_id = mt.match_team_id
+            WHERE mt.match_team_id = ${match.t1_id};
+        `))[0];
+
+        t2_ids = (await pool.query(`
+            SELECT mtp.*
+            FROM MatchTeamPlayer AS mtp
+            JOIN MatchTeam AS mt ON mtp.team_id = mt.match_team_id
+            WHERE mt.match_team_id = ${match.t2_id};
+        `))[0];
+
+        for (let i = 0; i < t1_ids.length; i++) {
+            t1_ids[i] = t1_ids[i].profile_id;
         }
 
-        for (let i = 1; i < 5; i++) {
-            if (match[`t2p${i}_id`] !== null) {
-                t2_ids.push(match[`t2p${i}_id`]);
-            }
+        for (let i = 0; i < t2_ids.length; i++) {
+            t2_ids[i] = t2_ids[i].profile_id;
         }
 
         if (mixed) {
             for (let i = 0; i < t1_ids.length; i++) {
-                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Profile WHERE profile_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].mixed_doubles_rating;
                     if (res[0][0].mixed_doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -627,7 +1404,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                 })
             }
             for (let i = 0; i < t2_ids.length; i++) {
-                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, last_name FROM Profile WHERE profile_id = ${t2_ids[i]}`).then(res => {
                     t2_rating += res[0][0].mixed_doubles_rating;
                     if (res[0][0].mixed_doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -637,7 +1414,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
             }
         } else if (doubles) {
             for (let i = 0; i < t1_ids.length; i++) {
-                await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Profile WHERE profile_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -646,7 +1423,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                 })
             }
             for (let i = 0; i < t2_ids.length; i++) {
-                await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                await pool.query(`SELECT doubles_rating, doubles_games_played, last_name FROM Profile WHERE profile_id = ${t2_ids[i]}`).then(res => {
                     t2_rating += res[0][0].doubles_rating;
                     if (res[0][0].doubles_games_played >= 5) {
                         eligible_players += 1;
@@ -656,7 +1433,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
             }
         } else {
             for (let i = 0; i < t1_ids.length; i++) {
-                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t1_ids[i]}`).then(res => {
+                await pool.query(`SELECT singles_rating, singles_games_played FROM Profile WHERE profile_id = ${t1_ids[i]}`).then(res => {
                     t1_rating += res[0][0].singles_rating;
                     if (res[0][0].singles_games_played >= 5) {
                         eligible_players += 1;
@@ -665,7 +1442,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                 })
             }
             for (let i = 0; i < t2_ids.length; i++) {
-                await pool.query(`SELECT singles_rating, singles_games_played FROM Player WHERE player_id = ${t2_ids[i]}`).then(res => {
+                await pool.query(`SELECT singles_rating, singles_games_played FROM Profile WHERE profile_id = ${t2_ids[i]}`).then(res => {
                     t2_rating += res[0][0].singles_rating;
                     if (res[0][0].singles_games_played >= 5) {
                         eligible_players += 1;
@@ -693,21 +1470,21 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
 
         let victory = t1score > t2score ? 1 : 2;
 
-        // if (mixed && (t2_ids.indexOf((await getPlayerID('Conor', 'Burns'))) != -1)) {
+        // if (mixed && (t2_ids.indexOf((await getProfileID('Conor', 'Burns'))) != -1)) {
         //     console.log('2', victory, t2_change)
-        // } else if (mixed && t1_ids.indexOf((await getPlayerID('Conor', 'Burns'))) != -1) {
+        // } else if (mixed && t1_ids.indexOf((await getProfileID('Conor', 'Burns'))) != -1) {
         //     console.log('1', victory, t1_change);
         // }
 
-        // if (mixed && (t2_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1)) {
+        // if (mixed && (t2_ids.indexOf((await getProfileID('Logan', 'Rosenbach'))) != -1)) {
         //     console.log('2', victory, t2_change)
-        // } else if (mixed && t1_ids.indexOf((await getPlayerID('Logan', 'Rosenbach'))) != -1) {
+        // } else if (mixed && t1_ids.indexOf((await getProfileID('Logan', 'Rosenbach'))) != -1) {
         //     console.log('1', victory, t1_change);
         // }
 
         for (let i = 0; i < t1_ids.length; i++) {
             if (mixed) {
-                let r = await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, wins, losses FROM Player WHERE player_id = ${t1_ids[i]}`);
+                let r = await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, wins, losses FROM Profile WHERE profile_id = ${t1_ids[i]}`);
                 let gp = r[0][0].mixed_doubles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -717,10 +1494,10 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].mixed_doubles_rating;
-                    await pool.query(`UPDATE Player SET mixed_doubles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, mixed_doubles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t1_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET mixed_doubles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, mixed_doubles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t1_ids[i]}`);
                 }
             } else if (doubles) {
-                let r = await pool.query(`SELECT doubles_rating, doubles_games_played, wins, losses FROM Player WHERE player_id = ${t1_ids[i]}`);
+                let r = await pool.query(`SELECT doubles_rating, doubles_games_played, wins, losses FROM Profile WHERE profile_id = ${t1_ids[i]}`);
                 let gp = r[0][0].doubles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -730,10 +1507,10 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].doubles_rating;
-                    await pool.query(`UPDATE Player SET doubles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, doubles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t1_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET doubles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, doubles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t1_ids[i]}`);
                 }
             } else {
-                let r = await pool.query(`SELECT singles_rating, singles_games_played, wins, losses FROM Player WHERE player_id = ${t1_ids[i]}`);
+                let r = await pool.query(`SELECT singles_rating, singles_games_played, wins, losses FROM Profile WHERE profile_id = ${t1_ids[i]}`);
                 let gp = r[0][0].singles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -743,14 +1520,14 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].singles_rating;
-                    await pool.query(`UPDATE Player SET singles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, singles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t1_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET singles_rating = ${Math.max(0, r + (t1_change * Math.max(min, 1 - gp/total_games)))}, singles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t1_ids[i]}`);
                 }
             }
         }
 
         for (let i = 0; i < t2_ids.length; i++) {
             if (mixed) {
-                let r = await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, losses, wins FROM Player WHERE player_id = ${t2_ids[i]}`);
+                let r = await pool.query(`SELECT mixed_doubles_rating, mixed_doubles_games_played, losses, wins FROM Profile WHERE profile_id = ${t2_ids[i]}`);
                 let gp = r[0][0].mixed_doubles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -760,10 +1537,10 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].mixed_doubles_rating;
-                    await pool.query(`UPDATE Player SET mixed_doubles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, mixed_doubles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t2_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET mixed_doubles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, mixed_doubles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t2_ids[i]}`);
                 }
             } else if (doubles) {
-                let r = await pool.query(`SELECT doubles_rating, doubles_games_played, losses, wins FROM Player WHERE player_id = ${t2_ids[i]}`);
+                let r = await pool.query(`SELECT doubles_rating, doubles_games_played, losses, wins FROM Profile WHERE profile_id = ${t2_ids[i]}`);
                 let gp = r[0][0].doubles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -773,11 +1550,11 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].doubles_rating;
-                    await pool.query(`UPDATE Player SET doubles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, doubles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t2_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET doubles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, doubles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t2_ids[i]}`);
                 }
             } else {
                 // console.log(match)
-                let r = await pool.query(`SELECT singles_rating, singles_games_played, losses, wins FROM Player WHERE player_id = ${t2_ids[i]}`);
+                let r = await pool.query(`SELECT singles_rating, singles_games_played, losses, wins FROM Profile WHERE profile_id = ${t2_ids[i]}`);
                 let gp = r[0][0].singles_games_played;
                 if (match_eligibility || gp < 5) {
                     let c = 'losses';
@@ -787,7 +1564,7 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
                         v = r[0][0].wins + 1;
                     }
                     r = r[0][0].singles_rating;
-                    await pool.query(`UPDATE Player SET singles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, singles_games_played = ${gp+1}, ${c}=${v} WHERE player_id = ${t2_ids[i]}`);
+                    await pool.query(`UPDATE Profile SET singles_rating = ${Math.max(0, r + (t2_change * Math.max(min, 1 - gp/total_games)))}, singles_games_played = ${gp+1}, ${c}=${v} WHERE profile_id = ${t2_ids[i]}`);
                 }
             }
         }
@@ -801,16 +1578,20 @@ async function updateMatchDetails(match_id, t1score, t2score, min=.3, total_game
 
 async function resetDatabase(player=true) {
     await pool.query('DELETE FROM `Match`;');
+    await pool.query('DELETE FROM MatchTeamPlayer;');
+    await pool.query('DELETE FROM MatchTeam;');
     await pool.query('DELETE FROM TeamType;');
     if (player)
-        await pool.query('DELETE FROM Player;');
+        await pool.query('DELETE FROM Profile;');
     await createTeamTypes();
     console.log('Database Reset!');
     return true;
 }
 
 async function resetTournaments(colleges=true) {
+    await pool.query('DELETE FROM TournamentTeamMember;');
     await pool.query('DELETE FROM TournamentTeam;');
+    await pool.query('DELETE FROM Court;');
     if (colleges) {
         await pool.query('DELETE FROM College;');
     }
@@ -819,8 +1600,9 @@ async function resetTournaments(colleges=true) {
     return true;
 }
 
-async function getPlayers(to_grab=['*']) {  // first_name, last_name, singles_rating, games_played
-    let players = await pool.query('SELECT ' + to_grab.join(', ') + ' FROM Player ORDER BY last_name ASC');
+async function getPlayers(to_grab=[]) {  // first_name, last_name, singles_rating, games_played
+    to_grab = to_grab.concat(['profile_id', 'first_name', 'last_name', 'college', 'gender', 'division', 'singles_games_played', 'doubles_games_played', 'mixed_doubles_games_played', 'wins', 'losses', 'singles_rating', 'doubles_rating', 'mixed_doubles_rating']);
+    let players = await pool.query('SELECT ' + to_grab.join(', ') + ' FROM Profile ORDER BY last_name ASC');
     return players[0];
 }
 
@@ -832,7 +1614,8 @@ async function getPlayer(first_name, last_name) {
         if (last_name.split(' ').length > 1) {
             last_name = last_name.substring(last_name.lastIndexOf(' ')+1, last_name.length);
         }
-        let p = await pool.query(`SELECT * FROM Player WHERE first_name="${first_name}" AND last_name="${last_name}"`);
+        to_grab = ['profile_id', 'first_name', 'last_name', 'college', 'gender', 'division', 'singles_games_played', 'doubles_games_played', 'mixed_doubles_games_played', 'wins', 'losses', 'singles_rating', 'doubles_rating', 'mixed_doubles_rating'];
+        let p = await pool.query(`SELECT ${to_grab.join(', ')} FROM Profile WHERE first_name="${first_name}" AND last_name="${last_name}"`);
         return p[0][0];
     } catch (error) {
         return null;
@@ -847,14 +1630,14 @@ async function getPlayerID(first_name, last_name) {
         if (last_name.split(' ').length > 1) {
             last_name = last_name.substring(last_name.lastIndexOf(' ')+1, last_name.length);
         }
-        let p = await pool.query(`SELECT player_id FROM Player WHERE first_name="${first_name}" AND last_name="${last_name}"`);
-        return p[0][0].player_id;
+        let p = await pool.query(`SELECT profile_id FROM Player WHERE first_name="${first_name}" AND last_name="${last_name}"`);
+        return p[0][0].profile_id;
     } catch (error) {
         return null;
     }
 }
 
-async function createMatch(t1_ids, t2_ids, team_type) {
+async function createMatch(t1_ids, t2_ids, team_type, datetime, affect_rating=true) {
     try {
         let keys = [];
         let values = [];
@@ -870,17 +1653,29 @@ async function createMatch(t1_ids, t2_ids, team_type) {
         // console.log(keys);
         // console.log(values);
 
-        let query = `INSERT INTO \`Match\`(${keys.join(', ')}, team_type) VALUES (${values.join(', ')}, "${team_type}")`
+        let t1_id = (await pool.query('INSERT INTO MatchTeam() VALUES();'))[0].insertId;
+        let t2_id = (await pool.query('INSERT INTO MatchTeam() VALUES();'))[0].insertId;
+        queries = [];
+        for (let i = 0; i < t1_ids.length; i++) {
+            queries.push(`INSERT INTO MatchTeamPlayer(profile_id, team_id) VALUES(${t1_ids[i]}, ${t1_id})`);
+        }
 
-        res = await pool.query(query).catch(error => {
-            console.log(error);
-            return null;
-        })
+        for (let i = 0; i < t2_ids.length; i++) {
+            queries.push(`INSERT INTO MatchTeamPlayer(profile_id, team_id) VALUES(${t2_ids[i]}, ${t2_id})`);
+        }
 
-        let match_id = await pool.query('SELECT LAST_INSERT_ID() AS match_id');
+        await pool.query(queries.join('; '));
+
+        let query = `INSERT INTO \`Match\`(t1_id, t2_id, time, affect_rating, team_type) VALUES (${t1_id}, ${t2_id}, "${datetime}", ${affect_rating}, "${team_type}")`
+
+        res = await pool.query(query);
+
+        // let match_id = await pool.query('SELECT LAST_INSERT_ID() AS match_id');
+        let match_id = await pool.query(`SELECT match_id FROM \`Match\` WHERE match_id=${res[0].insertId}`);
         match_id = match_id[0][0].match_id;
         return match_id;
     } catch(err) {
+        console.log(err)
         return null;
     }
 
@@ -923,7 +1718,7 @@ async function simulateMatches(matches_fp, n_times=1) {
             })
             res = await pool.query(`SELECT * FROM Player WHERE first_name = "${matches[i].t1.split(' ')[0]}" AND last_name = "${matches[i].t1.split(' ')[1]}"`);
             if (res[0].length > 0) {
-                t1p1_id = res[0][0].player_id;
+                t1p1_id = res[0][0].profile_id;
             } else {  // Something went wrong
                 continue;
             }
@@ -933,7 +1728,7 @@ async function simulateMatches(matches_fp, n_times=1) {
             })
             res = await pool.query(`SELECT * FROM Player WHERE first_name = "${matches[i].t2.split(' ')[0]}" AND last_name = "${matches[i].t2.split(' ')[1]}"`);
             if (res[0].length > 0) {
-                t2p1_id = res[0][0].player_id;
+                t2p1_id = res[0][0].profile_id;
             } else {  // Something went wrong
                 continue;
             }
@@ -964,17 +1759,17 @@ function sleep(ms) {
     });
 }
 
-async function setGender(player_id, gender) {
+async function setGender(profile_id, gender) {
     if (!(gender === 'Male' || gender === 'Female')) {
         return false;
     }
-    if (typeof(player_id) != 'object') {
-        player_id = [player_id];
+    if (typeof(profile_id) != 'object') {
+        profile_id = [profile_id];
     }
     
     try {
-        for (p in player_id) {
-            await pool.query(`UPDATE Player SET gender="${gender}" WHERE player_id=${player_id[p]}`);
+        for (p in profile_id) {
+            await pool.query(`UPDATE Profile SET gender="${gender}" WHERE profile_id=${profile_id[p]}`);
         }
         return true;
     } catch (error) {
@@ -983,21 +1778,21 @@ async function setGender(player_id, gender) {
     }
 }
 
-async function setDivision(player_id, division) {
+async function setDivision(profile_id, division) {
     if (!(division === 1 || division === 2)) {
         return false;
     }
-    if (typeof(player_id) != 'object') {
-        player_id = [player_id];
+    if (typeof(profile_id) != 'object') {
+        profile_id = [profile_id];
     }
     try {
-        for (p in player_id) {
-            let player = (await pool.query(`SELECT * FROM Player WHERE player_id=${player_id[p]}`))[0][0];
+        for (p in profile_id) {
+            let player = (await pool.query(`SELECT * FROM Profile WHERE profile_id=${profile_id[p]}`))[0][0];
             if ((player.singles_games_played == 0 && player.doubles_games_played == 0 && player.mixed_doubles_games_played == 0) || division !== player.division) {
                 let rating = division === 1 ? 4.5 : 3.5;
-                await pool.query(`UPDATE Player SET division=${division}, singles_games_played=0, doubles_games_played=0, mixed_doubles_games_played=0, singles_rating=${rating}, doubles_rating=${rating}, mixed_doubles_rating=${rating}, wins=0, losses=0 WHERE player_id=${player_id[p]}`);
+                await pool.query(`UPDATE Profile SET division=${division}, singles_games_played=0, doubles_games_played=0, mixed_doubles_games_played=0, singles_rating=${rating}, doubles_rating=${rating}, mixed_doubles_rating=${rating}, wins=0, losses=0 WHERE profile_id=${profile_id[p]}`);
             } else {
-                await pool.query(`UPDATE Player SET division=${division} WHERE player_id=${player_id[p]}`);
+                await pool.query(`UPDATE Profile SET division=${division} WHERE profile_id=${profile_id[p]}`);
             }
         }
         return true;
@@ -1016,10 +1811,44 @@ async function simulateNCPAMatches(matches_fp, n_times=1, file = false) {
     } else {
         matches = await fs.readJson(matches_fp);
     }
+
+    month_dic = {
+        'jan': '01',
+        'feb': '02',
+        'mar': '03',
+        'apr': '04',
+        'may': '05',
+        'jun': '06',
+        'jul': '07',
+        'aug': '08',
+        'sep': '09',
+        'oct': '10',
+        'nov': '11',
+        'dec': '12'
+    }
+
     matches.sort((a, b) => new Date(a.posted) - new Date(b.posted));   // Sort By Date Ascending
     for (let w = 0; w < n_times; w++) {
         for (let i = 0; i < matches.length; i++) {
             // Enter players in
+            
+            let spl = matches[i].posted.split(', ')
+            let month = month_dic[spl[0].split(' ')[0].toLowerCase()]
+            let day = spl[0].split(' ')[1];
+            if (day.length == 1) {
+                day = '0' + day;
+            }
+            let year = spl[1];
+            
+            let time = spl[2].split(' ')[0].split(':');
+            let ampm = spl[2].split(' ')[1];
+            if (ampm == 'PM' && time[0] != '12') {
+                time[0] = (parseInt(time[0]) + 12).toString();
+            }
+            time = time.join(':');
+            time += ':00';
+            
+            let datetime = `${year}-${month}-${day} ${time}`;
             
             let winning_players = matches[i].winning_team.split(' / ');
             let losing_players = matches[i].losing_team.split(' / ');
@@ -1033,11 +1862,19 @@ async function simulateNCPAMatches(matches_fp, n_times=1, file = false) {
                 // await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
                 //     ;
                 // })
-                await createPlayer({first_name: f_name, last_name: l_name});
-                res = await pool.query(`SELECT * FROM Player WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
+                res = await pool.query(`SELECT * FROM Profile WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
+                if (res[0].length == 0) {
+                    let r = await createPlayer({first_name: f_name, last_name: l_name});
+                    if (r === false) {
+                        console.log('Error with', f_name, l_name);
+                        continue;
+                    }
+                    res = [[{profile_id: r}]]
+                }
                 if (res[0].length > 0) {
-                    t1_ids.push(res[0][0].player_id);
+                    t1_ids.push(res[0][0].profile_id);
                 } else {  // Something went wrong
+                    console.log('Error with', f_name, l_name)
                     continue;
                 }
             }
@@ -1048,10 +1885,17 @@ async function simulateNCPAMatches(matches_fp, n_times=1, file = false) {
                 // await pool.query(`INSERT INTO Player(first_name, last_name) VALUES("${f_name}", "${l_name}")`).catch(error => {
                 //     ;
                 // })
-                await createPlayer({first_name: f_name, last_name: l_name});
-                res = await pool.query(`SELECT * FROM Player WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
+                res = await pool.query(`SELECT * FROM Profile WHERE first_name = "${f_name}" AND last_name = "${l_name}"`);
+                if (res[0].length == 0) {
+                    let r = await createPlayer({first_name: f_name, last_name: l_name});
+                    if (r === false) {
+                        console.log('Error with', f_name, l_name);
+                        continue;
+                    }
+                    res = [[{profile_id: r}]]
+                }
                 if (res[0].length > 0) {
-                    t2_ids.push(res[0][0].player_id);
+                    t2_ids.push(res[0][0].profile_id);
                 } else {  // Something went wrong
                     console.log('Error with', f_name, l_name)
                     continue;
@@ -1088,7 +1932,7 @@ async function simulateNCPAMatches(matches_fp, n_times=1, file = false) {
             //     console.log(t1_ids, t2_ids);
             // }
 
-            let match_id = await createMatch(t1_ids, t2_ids, m);
+            let match_id = await createMatch(t1_ids, t2_ids, m, datetime, true);
             
             if (match_id != null) {
                 // Update Match
@@ -1115,7 +1959,17 @@ async function createPlayer(info) {
             if (info.last_name.split(' ').length > 1) {
                 info.last_name = info.last_name.substring(info.last_name.lastIndexOf(' ')+1, info.last_name.length);
             }
-            let query = 'INSERT INTO Player('
+
+            let key = '';
+            while (true) {
+                key = generateConnectKey();
+                if ((await pool.query('SELECT * FROM Profile where connect_key="' + key + '"'))[0].length == 0) {
+                    break;
+                }
+            }
+            info.connect_key = key;
+
+            let query = 'INSERT INTO Profile('
             for (key in info) {
                 query += key + ', ';
             }
@@ -1134,11 +1988,12 @@ async function createPlayer(info) {
 
             let res = await pool.query(query);
             
-            return true;
+            return res[0].insertId;
         } else {
             return false;
         }
     } catch (error) {
+        console.log(error)
         if (error.errno == 1062) {
             ; // Already Exists
         }
@@ -1180,6 +2035,17 @@ async function loadNCPAPlayers(players_fp) {
     console.log('NCPA Players Loaded!');
 }
 
+function generateConnectKey(chars=20) {
+    let choose = '1234567890qwertyuiopasdfghjklzxcvbnm!@#$%^&*!@#$%^&*QWERTYUIOPASDFGHJKLZXCVBNM';
+    let key = [];
+
+    for (let i = 0; i < chars; i++) {
+        key.push(choose.charAt(Math.floor(Math.random() * choose.length)));
+    }
+
+    return key.join('');
+}
+
 async function loadNCPATournamentPlayers(teams_fp, file=false) {
 
     let teams = {}
@@ -1199,14 +2065,15 @@ async function loadNCPATournamentPlayers(teams_fp, file=false) {
                 college: team,
             }
             r = await createPlayer(player);
-            if (r !== true) {
-                try {
-                    r = (await pool.query(`UPDATE Player SET college="${team}" WHERE first_name="${first_name}" AND last_name="${player.last_name}"`));
-                } catch (error) {
-                    console.log("Error updating " + first_name + ' ' + last_name);
-                    return false;
-                }
-            }
+            
+            // if (r !== true) {
+            //     try {
+            //         r = (await pool.query(`UPDATE Profile SET college="${team}" WHERE first_name="${first_name}" AND last_name="${player.last_name}"`));
+            //     } catch (error) {
+            //         console.log("Error updating " + first_name + ' ' + player.last_name);
+            //         return false;
+            //     }
+            // }
         }
     }
 
@@ -1214,9 +2081,9 @@ async function loadNCPATournamentPlayers(teams_fp, file=false) {
     return true;
 }
 
-async function createTournament(tournament_name, location=null, date=null, multiplier=1) {
+async function createTournament(tournament_name, venue=null, multiplier=1) {
     try {
-        await pool.query(`INSERT INTO Tournament(name${location == null ? '' : ', location'}${date == null ? '' : ', date'}, multiplier) VALUES("${tournament_name}"${location == null ? '' : ', "' + location + '"'}${date == null ? '' : ', "' + date + '"'}, ${multiplier})`);
+        await pool.query(`INSERT INTO Tournament(name${venue == null ? '' : ', venue'}, multiplier) VALUES("${tournament_name}"${venue == null ? '' : ', "' + venue + '"'}, ${multiplier})`);
         return true;
     } catch (error) {
         console.log(error)
@@ -1323,7 +2190,7 @@ async function enterTournamentInfo(tournament_name, file=null) {
 async function updateCollegeRankings() {
     try {
         // await createTournament('2023 Championship', null, '2023-01-01');
-        let tournaments = (await pool.query(`SELECT name, max_points, multiplier FROM Tournament ORDER BY date DESC LIMIT 20`))[0];
+        let tournaments = (await pool.query(`SELECT name, max_points, multiplier FROM Tournament ORDER BY end_date DESC LIMIT 20`))[0];
         let reliability = 1;
         let reliability_decrease = .95;
         let weight_decrease = .7
@@ -1383,19 +2250,19 @@ async function updateCollegeRankings() {
         }
         return true;
     } catch (error) {
+        console.log(error);
         return false;
     }
 }
 
-async function enterAllTournamentInfo(tournament_name, location, date, multiplier, info) {
-
+async function enterAllTournamentInfo(tournament_name, venue, multiplier, info) {
     console.log('Creating Tournament...');
-    let r = await createTournament(tournament_name, location, date, multiplier);
+    let r = await createTournament(tournament_name, venue, multiplier);
     if (r == true) {
         console.log('Successfully Created Tournament', tournament_name);
     } else {return 'Error Creating Tournament (Tournament Name might already exist)'};
 
-    console.log('Entering Players...')
+    console.log('Entering Players...');
     r = await loadNCPATournamentPlayers(info.teamlist, true);
     if (r == true) {
         console.log('Successfully Entered Players');
@@ -1547,20 +2414,20 @@ async function mergePlayers(n1, n2) {
                 singles_games_played=${sg},
                 doubles_games_played=${dg},
                 mixed_doubles_games_played=${mdg}
-            WHERE player_id=${p1.player_id}
+            WHERE profile_id=${p1.profile_id}
         `))[0];
 
         if (true) {
             const queries = [
-                `UPDATE \`Match\` SET t1p1_id = ${p1.player_id} WHERE t1p1_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p2_id = ${p1.player_id} WHERE t1p2_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p3_id = ${p1.player_id} WHERE t1p3_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t1p4_id = ${p1.player_id} WHERE t1p4_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p1_id = ${p1.player_id} WHERE t2p1_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p2_id = ${p1.player_id} WHERE t2p2_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p3_id = ${p1.player_id} WHERE t2p3_id = ${p2.player_id};`,
-                `UPDATE \`Match\` SET t2p4_id = ${p1.player_id} WHERE t2p4_id = ${p2.player_id};`,
-                `DELETE FROM Player WHERE player_id = ${p2.player_id};`
+                `UPDATE \`Match\` SET t1p1_id = ${p1.profile_id} WHERE t1p1_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t1p2_id = ${p1.profile_id} WHERE t1p2_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t1p3_id = ${p1.profile_id} WHERE t1p3_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t1p4_id = ${p1.profile_id} WHERE t1p4_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t2p1_id = ${p1.profile_id} WHERE t2p1_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t2p2_id = ${p1.profile_id} WHERE t2p2_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t2p3_id = ${p1.profile_id} WHERE t2p3_id = ${p2.profile_id};`,
+                `UPDATE \`Match\` SET t2p4_id = ${p1.profile_id} WHERE t2p4_id = ${p2.profile_id};`,
+                `DELETE FROM Player WHERE profile_id = ${p2.profile_id};`
             ];
 
             queries.forEach(async(query) => {
@@ -1595,7 +2462,7 @@ async function mergePlayers(n1, n2) {
 // resetTournaments(true).then(async() => {
 //     tournament_name = '2024 National Collegiate Pickleball Championship';
 //     await loadNCPATournamentPlayers(tournament_name + '_teamlist.json');
-//     r = await createTournament(tournament_name, location='The Hub San Diego', date='2024-03-15', multiplier=1.5);
+//     r = await createTournament(tournament_name, venue='The Hub San Diego', date='2024-03-15', multiplier=1.5);
 //     if (r == true)
 //         console.log('Success created tournament - ' + tournament_name);
 //     else

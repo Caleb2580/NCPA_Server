@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCPA - Register</title>
+    <link rel="stylesheet" href="register.css">
+</head>
+<body>
+    <div class="main">
+        <div class="header">
+            <h1 style="width: 100%;">NCPA<br>PLAYER PROFILE</h1>
+        </div>
+        <div class="container">
+            <div class="cont">
+                <div class="inner">
+                    <h3>FIRST NAME*</h3>
+                    <input type="text" id="fname">
+                </div>
+                
+                <div class="inner">
+                    <h3>LAST NAME*</h3>
+                    <input type="text" id="lname">
+                </div>
+
+                <div class="inner">
+                    <h3>Email*</h3>
+                    <input type="text" id="email">
+                </div>
+
+                <div class="inner">
+                    <h3>Password*</h3>
+                    <input type="text" id="password">
+                </div>
+
+                <div class="inner">
+                    <h3>PHONE NUMBER</h3>
+                    <input type="text" id="phone_number">
+                </div>
+
+                <div class="inner">
+                    <h3>BIRTHDAY*</h3>
+                    <div class="date">
+                        <input type="text" id="month">
+                        <h3>/</h3>
+                        <input type="text" id="day">
+                        <h3>/</h3>
+                        <input style="width: 3.25em;" type="text" id="year">
+                    </div>
+                </div>
+
+                <div class="inner">
+                    <h3>GENDER*</h3>
+                    <div class="gender-div">
+                        <div onclick="selectGender(event, false)" class="selected" id="gender-male"><h1 onclick="selectGender(event, true)">Male</h1></div>
+                        <div onclick="selectGender(event, false)"><h1 onclick="selectGender(event, true)">Female</h1></div>
+                        <!-- <div onclick="selectGender(event, false)" id="gender-all"><h1 onclick="selectGender(event, true)">All</h1></div> -->
+                    </div>
+                </div>
+            </div>
+            <div class="cont info">
+                <h3>Players will be able to access the following information:</h3>
+                <h3 style="text-align: left; width: 80%; margin: auto; font-size: .6em; line-height: 1.8em;">1. UNIVERSITY RANKINGS<br>
+                    2. INDIVIDUAL PLAYER RANKINGS AGAINST THOUSANDS OF ATHLETES NATIONWIDE<br>
+                    3. NCPA PLAYER RATING<br>
+                    4. EXCLUSIVE CONTENT AND BONUS WINNINGS $$$<br>
+                </h3>
+                <button class="register-btn" onclick="register()">Register</button>
+                <div class="inner">
+                    <a href="/login">Already have an account?</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        function extractNums(str) {
+            new_str = '';
+            for (i in str) {
+                if (!isNaN(str[i])) {
+                    new_str += str[i];
+                }
+            }
+            return new_str;
+        }
+
+        function register() {
+            let fname = document.querySelector('#fname').value;
+            let lname = document.querySelector('#lname').value;
+            let email = document.querySelector('#email').value;
+            let password = document.querySelector('#password').value;
+            let phone_number = document.querySelector('#phone_number').value;
+            
+            if (phone_number === '') {
+                phone_number = null;
+            } else {
+                phone_number = extractNums(phone_number);
+            }
+
+            if (fname.length == 0) {
+                alert('Please enter a first name');
+                return;
+            } else if (lname.length == 0) {
+                alert('Please enter a last name');
+                return;
+            } else if (email.length == 0) {
+                alert('Please enter an email');
+                return;
+            } else if (!email.includes('@')) {
+                alert('Please enter a valid email');
+                return;
+            } else if (password.length < 6) {
+                alert('Your password must have at least 6 characters');
+                return;
+            } else if (phone_number != null && (phone_number.length == 0 || !(phone_number.length === 10 && !isNaN(phone_number)))) {
+                alert('Please enter a valid phone number');
+                return;
+            }
+
+            let month = document.querySelector('#month').value;
+            let day = document.querySelector('#day').value;
+            let year = document.querySelector('#year').value;
+
+            month = (month.length == 1 ? '0': '') + month;
+            day = (day.length == 1 ? '0': '') + day;
+
+            if (isNaN(month) || month.length != 2) {
+                alert('Please enter a valid month');
+                return;
+            } else if (isNaN(day) || day.length != 2) {
+                alert('Please enter a valid day');
+                return;
+            } else if (isNaN(year) || year.length != 4) {
+                alert('Please enter a valid year');
+                return;
+            }
+
+            let gender = document.querySelector('.gender-div .selected');
+
+            if (gender === null) {
+                alert('Please select a gender');
+                return;
+            } else {
+                gender = gender.innerText;
+            }
+
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fname: fname,
+                    lname: lname,
+                    email: email,
+                    password: password,
+                    phone_number: phone_number,
+                    gender: gender,
+                    day: day,
+                    month: month,
+                    year: year,
+                })
+            }).then(res => res.json()).then(data => {
+                if (data.success == true) {
+                    alert('Account Created!');
+                } else {
+                    alert(data.error);
+                }
+            });
+        }
+
+        function selectGender(event, h) {
+            event.stopPropagation();
+            let e = event.target;
+            if (h) {
+                e = event.target.parentElement;
+            }
+            document.querySelector('.gender-div').querySelectorAll('div').forEach(d => {
+                d.classList.remove('selected');
+            });
+
+            e.classList.add('selected');
+        }
+        
+        document.querySelector('#month').addEventListener('keydown', event => {
+            let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];
+            if (except.includes(event.key)) {
+                return;
+            }
+            if (isNaN(event.key) || event.target.value.length >= 2) {
+                event.preventDefault();
+            }
+        });
+
+        document.querySelector('#day').addEventListener('keydown', event => {
+            let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];
+            if (except.includes(event.key)) {
+                return;
+            }
+            if (isNaN(event.key) || event.target.value.length >= 2) {
+                event.preventDefault();
+            }
+        });
+
+        document.querySelector('#year').addEventListener('keydown', event => {
+            let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];
+            if (except.includes(event.key)) {
+                return;
+            }
+            if (isNaN(event.key) || event.target.value.length >= 4) {
+                event.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

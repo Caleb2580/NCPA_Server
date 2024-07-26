@@ -325,7 +325,7 @@
             } else {
                 if ('error' in res) {
                     if (res.error == 'authentication failed') {
-                        location.href = '/login';
+                        location.href = '/admin/login';
                     } else {
                         alert(res.error)
                     }

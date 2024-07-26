@@ -1,0 +1,454 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    font-family: 'Lexend Peta';
+    font-weight: 400;
+    overflow-x: hidden;
+    z-index: 0;
+    font-size: 16px;
+    background-color: rgb(250, 250, 250);
+}
+
+div.loading {
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background-color: rgba(0, 0, 0, .5);
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+div.loading.hide {
+    display: none;
+}
+
+.ring
+{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+width:150px;
+height:150px;
+background:transparent;
+border:3px solid #3c3c3c;
+border-radius:50%;
+text-align:center;
+line-height:150px;
+font-family:sans-serif;
+font-size:20px;
+color: rgb(250, 250, 250);
+letter-spacing:4px;
+text-transform:uppercase;
+text-shadow:0 0 10px rgb(250, 250, 250);
+box-shadow:0 0 20px rgba(0,0,0,.5);
+}
+.ring:before
+{
+content:'';
+position:absolute;
+top:-3px;
+left:-3px;
+width:100%;
+height:100%;
+border:3px solid transparent;
+border-top:3px solid rgb(250, 250, 250);
+border-right:3px solid rgb(250, 250, 250);
+border-radius:50%;
+animation:animateC 2s linear infinite;
+}
+.ring span
+{
+display:block;
+position:absolute;
+top:calc(50% - 2px);
+left:50%;
+width:50%;
+height:4px;
+background:transparent;
+transform-origin:left;
+animation:animate 2s linear infinite;
+}
+.ring span:before
+{
+content:'';
+position:absolute;
+width:16px;
+height:16px;
+border-radius:50%;
+background: rgb(250, 250, 250);
+top:-6px;
+right:-8px;
+box-shadow:0 0 20px  rgb(250, 250, 250);
+}
+@keyframes animateC
+{
+0%
+{
+    transform:rotate(0deg);
+}
+100%
+{
+    transform:rotate(360deg);
+}
+}
+@keyframes animate
+{
+0%
+{
+    transform:rotate(45deg);
+}
+100%
+{
+    transform:rotate(405deg);
+}
+}
+
+.scroll {
+width: 60px;
+height: 60px;
+position: fixed;
+right: 40px;
+bottom: 40px;
+border-radius: 30px;
+border: none;
+font-family: 'Lexend Peta';
+font-size: 2em;
+color: rgb(10, 10, 10);
+font-weight: 800;
+background-color: rgb(250, 250, 250);
+cursor: pointer;
+transition: ease-in-out .1s;
+z-index: 50;
+}
+
+.scroll:hover {
+width: 65px;
+height: 65px;
+right: 37.5px;
+bottom: 37.5px;
+border-radius: 32.5px;
+font-size: 2.1em;
+}
+
+.main-container {
+min-height: calc(100% - 100px);
+background-color: rgb(210, 210, 210);
+display: flex;
+justify-content: center;
+align-items: left;
+flex-direction: column;
+}
+
+.main {
+min-height: calc(100% - 2em);
+/* background-color: rgb(250, 250, 250); */
+background-color: rgb(210, 210, 210);
+display: flex;
+justify-content: center;
+align-items: left;
+flex-direction: column;
+overflow-x: hidden;
+gap: 1em;
+margin: 1em 5%;
+position: relative;
+}
+
+.main p {
+color: rgb(10, 10, 10);
+padding: 0;
+margin: 0;
+font-size: .8em;
+margin-top: .2em;
+}
+
+.main .container {
+/* margin: 5em 5em; */
+display: flex;
+justify-content: flex-start;
+/* align-items: left; */
+flex-direction: column;
+gap: 1em;
+overflow-x: scroll;
+min-width: 100%;
+max-width: 100%;
+max-height: 500px;
+} 
+
+.main .college {
+display: none;
+color: rgb(10, 10, 10);
+font-size: 1.5em;
+width: 100%;
+text-align: left;
+margin: 0;
+padding: 0;
+}
+
+.main .college.show {
+display: block;
+}
+
+.main h2.college {
+font-size: 1.2em;
+font-weight: 200;
+}
+
+.main select.sort {
+font-family: 'Lexend Peta';
+padding: .8em 1em;
+text-align: left;
+font-size: .8em;
+outline: none;
+border: none;
+background-color: rgb(126, 173, 237);
+border-radius: 20px;
+color: white;
+}
+
+.main select.sort option {
+background-color: rgb(250, 250, 250);
+color: rgb(10, 10, 10);
+}
+
+.main button {
+font-family: 'Lexend Peta';
+font-size: .7em;
+padding: .8em;
+border: 0;
+margin: 0;
+background-color: rgb(126, 173, 237);
+cursor: pointer;
+color: rgb(250, 250, 250);
+}
+
+.main button:hover {
+background-color: rgb(150, 190, 255);
+}
+
+.main button:active {
+background-color: rgb(170, 210, 255);
+}
+
+.column-additions {
+display: flex;
+justify-content: flex-start;
+align-items: center;
+flex-wrap: wrap;
+flex-direction: row;
+gap: 1em;
+overflow: hidden;
+width: 100%;
+}
+
+.column-additions .con {
+display: flex;
+justify-content: flex-start;
+align-items: center;
+flex-direction: row;
+gap: .5em;
+overflow: hidden;
+}
+
+.column-additions .con h2 {
+font-size: .7em;
+width: auto;
+padding: 0;
+margin: 0;
+}
+
+.column-additions .con button {
+background-color: rgb(250, 250, 250);
+width: 15px;
+height: 15px;
+padding: 0;
+margin: 0;
+}
+
+.column-additions .con button.selected {
+background-color: rgb(126, 173, 237);
+}
+
+.column-additions .con button:hover {
+background-color: rgb(235, 235, 235);
+}
+
+.column-additions .con button.selected:hover {
+background-color: rgb(150, 190, 255);
+}
+
+.main .refresh-div {
+display: flex;
+justify-content: center;
+align-items: center;
+margin-top: 1em;
+}
+
+.main .college-table {
+    border-collapse: collapse;
+    background-color: rgb(250, 250, 250);
+    /* box-shadow: 0 0 50px rgba(0, 0, 0, .5); */
+    font-size: .8em;
+}
+
+.main .college-table tr {
+    height: 3em;
+    /* border: 10px solid rgb(100, 100, 100); */
+    cursor: pointer;
+}
+
+.main .college-table td {
+    /* width: 10px; */
+    /* width: 200px; */
+    padding: .5em 2em;
+    /* border: 10px solid rgb(100, 100, 100); */
+    color: rgb(10, 10, 10);
+    font-weight: 500;
+    background-color: rgb(250, 250, 250);
+    border-right: 1px solid rgba(123, 122, 122, .2);
+}
+
+.main .college-table tr:nth-child(odd) td {
+background-color: rgb(225, 225, 225);
+}
+
+.main .college-table tr:nth-child(even) td {
+background-color: rgb(240, 240, 240);
+}
+
+.main .college-table tr:hover td {
+background-color: rgba(126, 173, 237, .4);
+}
+
+.main .college-table td.college-name {
+padding: .5em .5em;
+font-size: 1em;
+}
+
+.main .college-table th {
+    padding: 1em 2em;
+    /* border-right: 1px solid rgba(250, 250, 250, 1); */
+    color: rgb(250, 250, 250);
+    background-color: rgb(126, 173, 237);
+    cursor: pointer;
+    transition: ease-in-out .1s;
+    text-align: center;
+    z-index: 1000;
+}
+
+.main .college-table th:last-child, .main .college-table td:last-child {
+border-right: none;
+}
+
+.main .college-table th.DESC {
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(0, 0, 0, .3);
+}
+
+.main .college-table th.ASC {
+    font-weight: 800;
+    text-shadow: 0 0 10px rgba(0, 0, 0, .3);
+}
+
+.main .search-div {
+display: flex;
+justify-content: left;
+align-items: center;
+}
+
+.search-div input {
+font-family: 'Lexend Peta';
+outline: none;
+margin: 0;
+padding: .5em 1em;
+font-size: .8em;
+border: 1px solid rgb(250, 250, 250);
+background-color: rgb(250, 250, 250);
+border-right: none;
+border-top-left-radius: 20px;
+border-bottom-left-radius: 20px;
+}
+
+.search-div button.search {
+font-family: 'Lexend Peta';
+background-color: rgb(126, 173, 237);
+color: rgb(250, 250, 250);
+font-size: .8em;
+padding: .5em 1em;
+border: none;
+border-top-right-radius: 20px;
+border-bottom-right-radius: 20px;
+overflow: hidden;
+min-height: 2.4em;
+max-height: 2.4em;
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+.search-div button.search img {
+height: 17px;
+width: 17px;
+}
+
+.search-div button.search:hover {
+background-color: rgb(150, 190, 255);
+}
+
+.search-div button.search:active {
+background-color: rgb(170, 210, 255);
+}
+
+.search-div button.x-btn {
+    background-color: transparent;
+    color: rgb(75, 75, 75);
+    font-weight: 800;
+    font-family: 'Lexend Peta';
+}
+
+.search-div button.x-btn:hover {
+    background-color: transparent;
+    color: rgb(10, 10, 10);
+}
+
+
+
+@media screen and (max-width: 1100px) {
+.main {
+    font-size: .8em;
+}
+}
+
+@media screen and (max-width: 900px) {
+.main {
+    font-size: .7em;
+}
+.search-div button img {
+    height: 14px;
+    width: 14px;
+}
+}
+
+@media screen and (max-width: 700px) {
+.main {
+    font-size: .5em;
+}
+.search-div button img {
+    height: 12px;
+    width: 12px;
+}
+}
+
+@media screen and (max-width: 350px) {
+    .main .college {
+        font-size: 1.2em;
+    } 
+}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournaments - Profile</title>
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+    <div class="loading hide">
+        <div class="ring">Loading
+            <span></span>
+        </div>
+    </div>
+    <div class="main">
+        <div class="menu">
+            <div class="header">
+                <h1 onclick="location.href = '/';">NCPA</h1>
+            </div>
+            <div class="stuff">
+                <div class="items">
+                    <button class="selected" onclick="menuSelect(event)">Dashboard</button>
+                    <button onclick="menuSelect(event)">Tournaments</button>
+                    <button onclick="menuSelect(event)">Matches</button>
+                    <button onclick="menuSelect(event)">Account Info</button>
+                    <button onclick="location.href = '/'">Home</button>
+                </div>
+                <button class="signout-btn">Sign Out</button>
+            </div>
+        </div>
+
+        <div class="alert-screen">
+            <div class="register">
+                <button class="back-btn" onclick="regContinue(-1)">< Back</button>
+                <button class="x-btn" onclick="regX();">✕</button>
+                <div class="selected">
+                    <button onclick="reg_player=true; regPlayer(event);">Player</button>
+                    <h5>OR</h5>
+                    <button onclick="reg_player=false; regContinue(1)"">Captain</button>
+                </div>
+                <div>
+                    <h5>Captain Key</h5>
+                    <input type="text" class="captain-key">
+                    <button onclick="regEnterCaptain()">Enter</button>
+                </div>
+
+                <script>
+                    let reg_player = false;
+
+                    async function regX() {
+                        let ds = document.querySelectorAll('.alert-screen .register>div');
+                        for (let i in ds) {
+                            if (ds[i].classList != null && ds[i].classList.contains('selected')) {
+                                ds[i].classList.remove('selected');
+                            }
+                        }
+                        ds[0].classList.add('selected');
+                        document.querySelectorAll('.alert-screen .register input').forEach(inp => {
+                            inp.value = '';
+                        })
+                        document.querySelector('.alert-screen').classList.remove('show');
+                    }
+
+                    async function regContinue(c) {
+                        if (c == -1) {
+                            let ds = document.querySelectorAll('.alert-screen .register>div');
+                            for (let i in ds) {
+                                if (ds[i].classList != null && ds[i].classList.contains('selected')) {
+                                    if (i > 0) {
+                                        ds[i].classList.remove('selected');
+                                        ds[i-1].classList.add('selected');
+                                    }
+                                }
+                            }
+                        } else {
+                            let ds = document.querySelectorAll('.alert-screen .register>div');
+                            ds.forEach(d => {
+                                d.classList.remove('selected')
+                            })
+                            ds[c].classList.add('selected');
+                        }
+                    }
+                
+                    async function regEnterCaptain() {
+                        let tournament = document.querySelector('.alert-screen .register');
+                        tournament = tournament.getAttribute('id');
+                        tournament = tournament.substring(4, tournament.length);
+                        let c_key = document.querySelector('.alert-screen .register input.captain-key').value;
+                        if (c_key.length == 0) {
+                            return alert('Please enter a captain key');
+                        }
+
+                        let r = await fetch('/api/become-captain', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                captain_key: c_key,
+                                t_name: tournament
+                            })
+                        }).then(r => r.json());
+
+                        if (r.success === true) {
+                            alert('Success');
+                        } else {
+                            alert(r.error);
+                        }
+                    }
+                    
+                    let regging = false;
+
+                    function regPlayer(event) {
+                        if (regging)
+                            return;
+
+                        regging = true;
+                        let tournament = document.querySelector('.alert-screen .register');
+                        tournament = tournament.getAttribute('id');
+                        tournament = tournament.substring(4, tournament.length);
+
+                        event.target.style.cursor = 'wait';
+                        document.body.style.cursor = 'wait';
+
+                        let r = fetch('/api/register-for-tournament', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                tournament: tournament
+                            })
+                        }).then(r => r.json())
+                        .then(r => {
+                            regging = false;
+                            
+                            event.target.style.cursor = 'pointer';
+                            document.body.style.cursor = 'default';
+                            if (r.success) {
+                                location.href = r.url;
+                            } else {
+                                return alert(r.error);
+                            }
+                        });
+                    }
+                </script>
+            </div>
+        </div>
+    <div class="page">
+        
+    </div>
+
+</body>
+<script src="profile.js"></script>
+</html>
