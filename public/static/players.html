@@ -18,7 +18,17 @@
                     eval(scripts[i].textContent);
                 }
             });
+
+            function hiddenMenu() {
+                let menu = document.querySelector('.hidden-menu');
+                if (menu.classList.contains('selected')) {
+                    menu.classList.remove('selected');
+                } else {
+                    menu.classList.add('selected');
+                }
+            }
         </script>
+        
     </div>
 
     <div class="loading hide">
@@ -123,7 +133,7 @@
             <h2 class="college"></h2>
             <div class="search-div">
                 <input type="text" placeholder="Search">
-                <button class="search" onclick="search();"><img src="/images/search.png" alt=""></button>
+                <button class="search" onclick="search();"><span>Search</span></button>
                 <button class="x-btn" onclick="document.querySelector('.search-div input').value = ''; search();">&#x2716;</button>
             </div>
             <div class="gender-div">
@@ -143,7 +153,7 @@
                     
                 </table>
             </div>
-            <p>Note: () around a rating indicate that a player isn't fully eligible, as they haven't played enough matches in all match types. You must play 5 games in a specific match type to become eligible in that match type.<br>**Click on a college to view more details**</p>
+            <p>Note: () around a rating indicate that a player isn't fully eligible for a rating, as they haven't played enough matches in all match types. Players must play 5 games in a specific match type to become eligible in that match type.<br>**Click on a college to view more details**</p>
             <div class="refresh-div">
                 <button onclick="setup();">REFRESH</button>
             </div>

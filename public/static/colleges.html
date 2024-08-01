@@ -18,6 +18,15 @@
                     eval(scripts[i].textContent);
                 }
             });
+
+            function hiddenMenu() {
+                let menu = document.querySelector('.hidden-menu');
+                if (menu.classList.contains('selected')) {
+                    menu.classList.remove('selected');
+                } else {
+                    menu.classList.add('selected');
+                }
+            }
         </script>
     </div>
 
@@ -74,7 +83,7 @@
             <h2 class="college"></h2>
             <div class="search-div">
                 <input type="text" placeholder="Search">
-                <button class="search" onclick="search();"><img src="https://static.wixstatic.com/media/76e561_57f5b46344e043539253c0492070f91c~mv2.png/v1/fill/w_552,h_552,al_c,lg_1,q_85,enc_auto/76e561_57f5b46344e043539253c0492070f91c~mv2.png" alt=""></button>
+                <button class="search" onclick="search();"><span>Search</span></button>
                 <button class="x-btn" onclick="document.querySelector('.search-div input').value = ''; search();">&#x2716;</button>
             </div>
             

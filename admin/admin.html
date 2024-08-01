@@ -15,11 +15,15 @@
             </div>
             <div class="stuff">
                 <div class="items">
-                    <button class="selected" onclick="menuSelect(event)">Tournaments</button>
+                    <button onclick="menuSelect(event)">Tournaments</button>
+                    <button class="selected" onclick="menuSelect(event)">Profiles</button>
                     <button onclick="menuSelect(event)">Reset Database</button>
                     <button onclick="location.href = '/'">Home</button>
                 </div>
             </div>
+
+            
+            <span onclick="openCloseMenu();">&#9776;</span>
         </div>
         <div class="page">
 
@@ -86,6 +90,38 @@
                             select();
                         }
 
+                        async function deleteTeam(event, tournament_team_id) {
+                            event.stopPropagation();
+                            let index = -1;
+                            for (let i in tournaments.teams) {
+                                if (tournaments.teams[i].tournament_team_id == tournament_team_id) {
+                                    index = i;
+                                    break;
+                                }
+                            }
+
+                            let r = await fetch('/admin/delete-tournament-team', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    tournament_team_id: tournament_team_id
+                                })
+                            }).then(res => res.json());
+
+                            let con = confirm(`Are you sure you want to delete ${tournaments.teams[index].name}`)
+
+                            if (r.success) {
+                                tournaments.teams.splice(index, 1);
+                                updateView();
+                            } else {
+                                alert(r.error);
+                            }
+
+
+                        }
+
                         function updateView() {
                             let view = document.querySelector('.Tournaments .View');
                             view.innerHTML = '';
@@ -127,6 +163,13 @@
                             sites.appendChild(teams);
 
                             teams.addEventListener('click', (event) => {
+                                document.querySelectorAll('.page .Tournaments .View .sites button').forEach(btn => {
+                                    btn.classList.remove('selected');
+                                });
+
+                                event.target.classList.add('selected');
+                                
+
                                 let main = document.querySelector('.page .Tournaments .View .main-view');
                                 main.innerHTML = '';
 
@@ -135,15 +178,39 @@
                                 tournaments.teams.forEach(team => {
                                     if (team.tournament === currentViewTournament.name) {
                                         teams_counter += 1;
-                                        let btn = document.createElement('button');
-                                        btn.innerText = team.name;
-                                        btn.setAttribute('onclick', `
+                                        let div = document.createElement('div');
+                                        div.classList.add('team');
+                                        // div.setAttribute('onclick', `
+                                        //     currentViewTeam = ${JSON.stringify(team)};
+                                        //     updateViewTeam();
+                                        //     goto(5);
+                                        // `);
+
+                                        let name = document.createElement('span');
+                                        name.innerText = team.name;
+
+                                        let options = document.createElement('div');
+                                        options.classList.add('options');
+                                        
+                                        let editTeam = document.createElement('button');
+                                        editTeam.innerText = 'Edit';
+                                        editTeam.setAttribute('onclick', `
+                                            event.stopPropagation();
                                             currentViewTeam = ${JSON.stringify(team)};
                                             updateViewTeam();
                                             goto(5);
-                                        `)
+                                        `);
+                                        options.appendChild(editTeam);
+                                        
+                                        let del = document.createElement('button');
+                                        del.innerText = 'Delete';
+                                        del.classList.add('cancel');
+                                        del.setAttribute('onclick', `deleteTeam(event, ${team.tournament_team_id})`);
+                                        options.appendChild(del);
 
-                                        main.appendChild(btn);
+                                        div.appendChild(name);
+                                        div.appendChild(options);
+                                        main.appendChild(div);
                                     }
                                 })
 
@@ -181,24 +248,75 @@
                         }
 
                         function updateViewTeam() {
-                            console.log(currentViewTeam);
 
                             let vt = document.querySelector('.page .Tournaments .View.Team')
                             vt.innerHTML = '';
 
                             let name = document.createElement('h1');
+                            name.classList.add('big')
                             name.innerText = currentViewTeam.name;
 
                             vt.appendChild(name);
+
+                            // Change team name
+                            let team_name = document.createElement('h1');
+                            team_name.classList.add('team-name');
+                            team_name.innerText = 'Team Name';
+
+                            let team_name_container = document.createElement('div');
+                            team_name_container.classList.add('container')
+
+                            let team_name_input = document.createElement('input');
+                            team_name_input.setAttribute('class', 'change_team_name')
+                            team_name_input.setAttribute('placeholder', currentViewTeam.name);
+
+                            let save_team_name = document.createElement('button');
+                            save_team_name.innerText = 'Save';
+                            save_team_name.addEventListener('click', async(event) => {
+                                let new_name = document.querySelector('.page .Tournaments .View.Team .change_team_name').value;
+                                let r = await fetch('/admin/change-team-name', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        tournament_team_id: currentViewTeam.tournament_team_id,
+                                        new_team_name: new_name
+                                    })
+                                }).then(r => r.json());
+
+                                if (r.success == true) {
+                                    for (let i in tournaments.teams) {
+                                        if (tournaments.teams[i].tournament_team_id == currentViewTeam.tournament_team_id) {
+                                            tournaments.teams[i].name = new_name;
+                                            currentViewTeam = tournaments.teams[i];
+                                            break;
+                                        }
+                                    }
+                                    updateView();
+                                    updateViewTeam();
+                                } else {
+                                    alert('error');
+                                }
+                            })
+
+                            vt.appendChild(team_name);
+                            team_name_container.appendChild(team_name_input);
+                            team_name_container.appendChild(save_team_name);
+                            vt.appendChild(team_name_container);
+
+                            
+                            let captain_key_title = document.createElement('h1');
+                            captain_key_title.innerHTML = 'Captain Key';
+                            vt.appendChild(captain_key_title)
 
                             let ck_div = document.createElement('div');
                             ck_div.classList.add('captain-key');
 
                             let captain_key = document.createElement('h2');
-                            captain_key.innerHTML = 'Captain Key - ';
                             let span = document.createElement('span');
                             if (currentViewTeam.captain_key === null) {
-                                span.innerHTML += 'None'
+                                span.innerHTML = 'None'
                             } else {
                                 for (let i in currentViewTeam.captain_key) {
                                     span.innerHTML += '•';
@@ -235,17 +353,20 @@
 
                                 if (res.success) {
                                     for (let i in tournaments.teams) {
-                                        if (tournaments.teams[i].name == currentViewTeam.name) {
+                                        if (tournaments.teams[i].tournament == currentViewTeam.tournament && tournaments.teams[i].name == currentViewTeam.name) {
                                             tournaments.teams[i].captain_key = res.key;
+                                            currentViewTeam = tournaments.teams[i];
                                             break;
                                         }
                                     }
-                                    currentViewTeam.captain_key = res.key;
                                     let span = document.querySelector('.page .Tournaments .View.Team .captain-key h2 span');
                                     span.dispatchEvent(new Event('click'));
                                     if (!span.classList.contains('show')) {
                                         span.dispatchEvent(new Event('click'));
                                     }
+                                    updateView();
+                                    updateViewTeam();
+
                                 } else {
                                     alert(res.error);
                                 }
@@ -325,8 +446,8 @@
                                         let edit_div = document.querySelector('.page .Tournaments .Create.Edit');
                                         ct = ${JSON.stringify(tournaments[type][i])};
                                         for (key in ct) {
-                                            console.log(ct[key]);
                                             let e = edit_div.querySelector("input." + key);
+                                            
                                             if (e != null) {
                                                 if (('original_' + key) in ct) {
                                                     e.value = ct['original_' + key];
@@ -577,6 +698,20 @@
                         </div>
                         <div class="part2">
                             <div class="inner">
+                                <h3>Multiplier</h3>
+                                <div class="money">
+                                    <input type="text" class="multiplier">
+                                    <h3>x</h3>
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Registration Price</h3>
+                                <div class="money">
+                                    <h3>$</h3>
+                                    <input type="text" class="registration_price">
+                                </div>
+                            </div>
+                            <div class="inner">
                                 <h3>Description</h3>
                                 <textarea name="" id="" class="description"></textarea>
                             </div>
@@ -596,6 +731,8 @@
                             let registration_close = document.querySelector('.Create .info input.registration_close').value;
                             let venue = document.querySelector('.Create .info input.venue').value;
                             let venue_address = document.querySelector('.Create .info input.venue_address').value;
+                            let multiplier = document.querySelector('.Create .info input.multiplier').value;
+                            let registration_price = document.querySelector('.Create .info input.registration_price').value;
                             let description = document.querySelector('.Create .info textarea.description').value;
 
                             if (name.length == 0) {
@@ -624,6 +761,18 @@
                             }
                             if (description.length > 0) {
                                 body.description = description;
+                            }
+                            if (multiplier.length > 0) {
+                                if (isNaN(multiplier)) {
+                                    return alert('Multiplier must be a number');
+                                }
+                                body.multiplier = multiplier;
+                            }
+                            if (registration_price.length > 0) {
+                                if (isNaN(registration_price)) {
+                                    return alert('Registration price must be a number');
+                                }
+                                body.registration_price = registration_price;
                             }
 
                             let res = await fetch('/admin/create-tournament', {
@@ -687,6 +836,20 @@
                         </div>
                         <div class="part2">
                             <div class="inner">
+                                <h3>Multiplier</h3>
+                                <div class="money">
+                                    <input type="text" class="multiplier">
+                                    <h3>x</h3>
+                                </div>
+                            </div>
+                            <div class="inner">
+                                <h3>Registration Price</h3>
+                                <div class="money">
+                                    <h3>$</h3>
+                                    <input type="text" class="registration_price">
+                                </div>
+                            </div>
+                            <div class="inner">
                                 <h3>Description</h3>
                                 <textarea name="" id="" class="description"></textarea>
                             </div>
@@ -706,6 +869,8 @@
                             let registration_close = document.querySelector('.Create.Edit .info input.registration_close').value;
                             let venue = document.querySelector('.Create.Edit .info input.venue').value;
                             let venue_address = document.querySelector('.Create.Edit .info input.venue_address').value;
+                            let multiplier = document.querySelector('.Create.Edit .info input.multiplier').value;
+                            let registration_price = document.querySelector('.Create.Edit .info input.registration_price').value;
                             let description = document.querySelector('.Create.Edit .info textarea.description').value;
 
                             let old_name = document.querySelector('.Create.Edit').getAttribute('id');
@@ -742,6 +907,18 @@
                             }
                             if (description.length > 0) {
                                 body.description = description;
+                            }
+                            if (multiplier.length > 0) {
+                                if (isNaN(multiplier)) {
+                                    return alert('Multiplier must be a number');
+                                }
+                                body.multiplier = multiplier;
+                            }
+                            if (registration_price.length > 0) {
+                                if (isNaN(registration_price)) {
+                                    return alert('Registration price must be a number');
+                                }
+                                body.registration_price = registration_price;
                             }
 
                             let res = await fetch('/admin/edit-tournament', {
@@ -813,6 +990,253 @@
                 </div>
             </div>
 
+            <div class="Profiles" style="width: 100%; min-height: 100%; flex-direction: column; align-items: flex-start;">
+                <script>
+                    let profiles = [];
+                    let search = null;
+                    let profile_key_translator = {
+                        'profile_id': 'Profile ID',
+                        'first_name': 'First Name',
+                        'last_name': 'Last Name',
+                        'college': 'College',
+                        'email': 'Email',
+                        'phone_number': 'Phone Number',
+                        'gender': 'Gender',
+                        'division': 'Division',
+                        'birthday': 'Birthday',
+                        'connect_key': 'Connect Key',
+                        'permission': 'Permission Level'
+                    };
+
+                    async function grabProfiles() {
+                        let r = await fetch('/admin/get-players').then(r => r.json());
+
+                        if (r.success) {
+                            return r.profiles;
+                        } else {
+                            alert('Something went wrong when grabbing profiles');
+                            return null;
+                        }
+                    }
+
+                    async function editProfile(profile_info) {
+                        let r = await fetch('/admin/edit-profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                profile_info: profile_info
+                            })
+                        }).then(r => r.json());
+
+                        if (r.success === true) {
+                            return true;
+                        } else {
+                            alert(r.error);
+                            return false;
+                        }
+                    }
+
+                    async function setupProfiles(search='', typing=false) {
+                        profiles = await grabProfiles();
+
+                        let profiles_div = null;
+
+                        if (search.length == 0 && !typing) {
+                            let page = document.querySelector('.page>div.Profiles');
+                            page.innerHTML = '';
+
+                            let page_title = document.createElement('h1');
+                            page_title.innerText = 'Profiles';
+                            page.appendChild(page_title);
+
+                            let search_div = document.createElement('div');
+                            search_div.classList.add('search');
+
+                            let search_h2 = document.createElement('h2');
+                            search_h2.innerText = 'Search:';
+                            search_div.appendChild(search_h2);
+
+                            let search_bar = document.createElement('input');
+                            search_bar.addEventListener('input', event => {
+                                setupProfiles(event.target.value, true);
+                            })
+                            search_div.appendChild(search_bar);
+
+                            page.appendChild(search_div);
+
+                            profiles_div = document.createElement('div');
+                            profiles_div.classList.add('profiles-div');
+                            page.appendChild(profiles_div);
+                        } else {
+                            profiles_div = document.querySelector('.page .Profiles .profiles-div');
+                            profiles_div.innerHTML = '';
+                        }
+                        
+                        for (let p in profiles) {
+                            if (!(profiles[p].first_name + ' ' + profiles[p].last_name).toLocaleLowerCase().includes(search.toLocaleLowerCase())) {
+                                continue;
+                            }
+                            let profile_div = document.createElement('div');
+                            profile_div.classList.add('profile');
+
+                            let top = document.createElement('div');
+                            top.classList.add('top');
+
+                            let player_name = document.createElement('h1');
+                            player_name.innerText = profiles[p].first_name + ' ' + profiles[p].last_name;
+
+                            let delete_player = document.createElement('button');
+                            delete_player.innerText = 'Delete';
+                            delete_player.classList.add('delete');
+                            delete_player.addEventListener('click', async(event) => {
+                                event.stopPropagation();
+                                let r = await fetch('/admin/delete-profile', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        profile_id: profiles[p].profile_id
+                                    })
+                                }).then(r => r.json());
+
+                                if (r.success === true) {
+                                    let ind = -1;
+                                    for (let pr in profiles) {
+                                        if (profiles[pr].profile_id == profiles[p].profile_id) {
+                                            ind = pr;
+                                            break;
+                                        }
+                                    }
+                                    if (ind != -1) {
+                                        profiles.splice(ind, 1);
+                                    }
+                                    event.target.parentElement.parentElement.remove();
+                                }
+                            })
+
+                            top.appendChild(player_name);
+                            top.appendChild(delete_player);
+                            profile_div.appendChild(top);
+
+                            let bottom = document.createElement('div');
+                            bottom.classList.add('bottom');
+
+                            let non_editables = ['profile_id', 'connect_key']
+
+                            for (let key in profiles[p]) {
+                                if (key in profile_key_translator) {
+                                    let div = document.createElement('div');
+                                    let e = document.createElement('h2');
+                                    e.innerText = profile_key_translator[key] + ':';
+                                    div.appendChild(e);
+
+                                    if (non_editables.includes(key)) {
+                                        let h2 = document.createElement('h2');
+                                        h2.classList.add(key)
+                                        if (profiles[p][key] != null) {
+                                            h2.innerText = profiles[p][key];
+                                        }
+                                        div.appendChild(h2);
+                                    } else {
+                                        let input = document.createElement('input');
+                                        input.classList.add(key);
+                                        input.addEventListener('input', event => {
+                                            if (event.target.value.length == 0) {
+                                                event.target.parentElement.querySelector('button.x').classList.remove('show');
+                                            } else {
+                                                event.target.parentElement.querySelector('button.x').classList.add('show');
+                                            }
+                                        });
+                                        if (profiles[p][key] != null) {
+                                            input.setAttribute('placeholder', profiles[p][key]);
+                                        } else {
+                                            input.setAttribute('placeholder', '');
+                                        }
+                                        div.appendChild(input);
+                                        let x = document.createElement('button');
+                                        x.classList.add('x');
+                                        x.innerText = 'x';
+                                        x.addEventListener('click', event => {
+                                            event.target.parentElement.querySelector('input').value = '';
+                                            event.target.classList.remove('show');
+                                        })
+                                        div.appendChild(x);
+                                    }
+                                    bottom.appendChild(div);
+                                }
+                            }
+
+                            let save_button = document.createElement('button');
+                            save_button.classList.add('save');
+                            save_button.innerText = 'Save';
+                            let non_asdf = ['division', 'permission']
+                            save_button.addEventListener('click', async(event) => {
+                                let bottom = event.target.parentElement;
+                                let profile_info = {};
+                                profile_info.profile_id = parseInt(event.target.parentElement.querySelector('h2.profile_id').innerText);
+                                let inputs = event.target.parentElement.querySelectorAll('input');
+                                inputs.forEach(inp => {
+                                    if (inp.value.length > 0 && inp.value != inp.getAttribute('placeholder')) {
+                                        let key = inp.getAttribute('class')
+                                        if (non_asdf.includes(key)) {
+                                            profile_info[key] = parseFloat(inp.value);
+                                        } else {
+                                            profile_info[key] = inp.value;
+                                        }
+                                    }
+                                });
+                                if (Object.keys(profile_info).length == 1) {
+                                    return;
+                                }
+                                let r = await editProfile(profile_info);
+                                if (r == true) {
+                                    alert('Saved');
+                                    delete profile_info.profile_id;
+                                    for (let key in profile_info) {
+                                        let e = bottom.querySelector(`input.${key}`);
+                                        e.setAttribute('placeholder', profile_info[key])
+                                        e.value = '';
+                                        profiles[p][key] = profile_info[key];
+                                    }
+                                    bottom.querySelectorAll('button.x').forEach(btn => {
+                                        btn.classList.remove('show');
+                                    })
+                                    bottom.parentElement.querySelector('.top>h1').innerText = profiles[p].first_name + ' ' + profiles[p].last_name;
+                                }
+                            })
+                            bottom.appendChild(save_button);
+
+                            profile_div.appendChild(bottom);
+
+                            profile_div.addEventListener('click', (event) => {
+                                let e = event.target;
+                                if (e.classList.contains('top')) {
+                                    e = e.parentElement;
+                                } else if (e.parentElement.classList.contains('top')) {
+                                    e = e.parentElement.parentElement;
+                                } else if (e.classList.contains('profile')) {
+                                    ;
+                                } else {
+                                    return;
+                                }
+                                if (e.classList.contains('show')) {
+                                    e.classList.remove('show');
+                                } else {
+                                    e.classList.add('show');
+                                }
+                            })
+
+                            profiles_div.appendChild(profile_div);
+                        }
+                    }
+
+                    setupProfiles();
+                </script>
+            </div>
+
             <div class="Reset-Database" style="width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center">
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
@@ -863,19 +1287,13 @@
             
                     @media screen and (max-width: 800px) {
                         .main_reset {
-                            font-size: .7em;
+                            font-size: .97em;
                         }
                     }
             
                     @media screen and (max-width: 600px) {
                         .main_reset {
-                            font-size: .6em;
-                        }
-                    }
-            
-                    @media screen and (max-width: 450px) {
-                        .main_reset {
-                            font-size: .4em;
+                            font-size: .8em;
                         }
                     }
                 </style>
@@ -902,18 +1320,19 @@
             
                         if ('success' in r && r.success === true) {
                             alert('Successfully reset database');
+                            location.href = '/admin'
                         } else {
                             alert('Something went wrong');
                         }
                     }
             
-                    document.querySelector('.main_reset button').addEventListener('mouseover', () => {
-                        document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 75, 75)';
-                    })
+                    // document.querySelector('.main_reset button').addEventListener('mouseover', () => {
+                    //     document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 75, 75)';
+                    // })
             
-                    document.querySelector('.main_reset button').addEventListener('mouseout', () => {
-                        document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 250, 250)';
-                    })
+                    // document.querySelector('.main_reset button').addEventListener('mouseout', () => {
+                    //     document.querySelector('.main_reset').style.backgroundColor = 'rgb(250, 250, 250)';
+                    // })
                 </script>
             </div>
         </div>
@@ -921,6 +1340,16 @@
 
 </body>
 <script>
+
+    function openCloseMenu() {
+        let main = document.querySelector('.main');
+
+        if (main.classList.contains('slid-over')) {
+            main.classList.remove('slid-over');
+        } else {
+            main.classList.add('slid-over');
+        }
+    }
 
     async function setup() {
         document.querySelector('.menu .items button.selected').dispatchEvent(new Event('click'))

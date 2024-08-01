@@ -20,12 +20,13 @@ html, body {
     display: flex;
     justify-content: space-around;
     align-items: center;
+    transition: ease-in-out .3s;
 }
 
 div.loading {
     width: 100%;
     height: 100%;
-    z-index: 1001;
+    z-index: 100100;
     background-color: rgba(0, 0, 0, .5);
     position: fixed;
     top: 0;
@@ -34,11 +35,9 @@ div.loading {
     justify-content: center;
     align-items: center;
 }
-
 div.loading.hide {
     display: none;
 }
-
 .ring
 {
 position:absolute;
@@ -122,9 +121,28 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 }
 
 .menu {
-    width: 15em;
     height: 100%;
+    width: 16em;
     background-color: rgb(22, 32, 44);
+    position: relative;
+}
+
+.menu span {
+    display: none;
+    position: absolute;
+    color: rgb(250, 250, 250);
+    background-color: transparent;
+    height: 1.5em;
+    width: 1.5em;
+    cursor: pointer;
+    text-align: center;
+    top: 0;
+    right: 0;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    z-index: 10;
+    font-weight: 100;
+    font-size: 1.2em;
 }
 
 .alert-screen {
@@ -143,7 +161,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 }
 
 .page {
-    width: calc(100% - 21em);
+    width: calc(100% - 22em);
     height: calc(100% - 4em);
     padding: 2em 3em;
     overflow-y: auto;
@@ -216,6 +234,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     margin-bottom: 1em;
     font-family: 'Lexend Peta';
     cursor: pointer;
+    font-size: 1em;
 }
 
 .signout-btn:hover {
@@ -274,12 +293,13 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 
 .page.Dashboard .stat-div h1 {
     margin: 0;
+    font-weight: 400;
 }
 
 .page.Dashboard .stat-container {
-    width: 100%;
+    width: auto;
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     gap: 1em;
     flex-wrap: wrap;
@@ -288,70 +308,118 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 .page.Dashboard .past-matches {
     width: 25em;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
 }
 
 .page.Dashboard .past-matches h1 {
     color: rgb(31, 55, 85);
     font-size: .9em;
     font-weight: 600;
+    margin: 0;
 }
-
 
 .page.Dashboard .past-matches div.inner {
     /* box-shadow: 0 0 20px rgba(0, 0, 0, .1); */
     display: flex;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap;
     /* padding: 2em; */
     gap: 1.5em;
-    width: 100%;
+    width: auto;
 }
 
-.page.Dashboard .past-matches div.inner div {
+.page.Dashboard .past-matches div.inner>div {
     width: calc(100% - 1em);
     background-color: rgb(225, 225, 225);
+    /* background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); */
+    /* background: linear-gradient(135deg, rgba(255,150,101,1) 0%, rgba(255,120,120,1) 100%); */
     padding: 1em;
-    border-radius: 10px;
+    border-radius: 15px;
     display: flex;
     justify-content: center;
     align-items: center;
     flex-direction: column;
     gap: .8em;
-    max-width: calc(300px - 2em);
-    height: 13em;
+    max-width: calc(25em - 2em);
+    height: 17em;
+    transition: ease-in-out .2s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
 }
 
-.page.Dashboard .past-matches div.inner div.win {
-    background-color: rgba(100, 175, 100, .5);
-}
-
-.page.Dashboard .past-matches div.inner div.loss {
-    background-color: rgba(255, 100, 100, .5);
-}
-
-.page.Dashboard .past-matches div.inner div h3 {
+.page.Dashboard .past-matches div.inner>div div.cover {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    margin: 0;
-    color: rgb(22, 32, 44);
-    font-size: .9em;
-    font-weight: 500;
+    height: 100%;
+    background-color: transparent;
+    z-index: 1;
+    transition: ease-in-out .3s;
 }
 
-.page.Dashboard .past-matches div.inner h4 {
-    text-align: center;
+.page.Dashboard .past-matches div.inner>div:hover div.cover {
+    background-color: rgba(0, 0, 0, .2);
+}
+
+.page.Dashboard .past-matches div.inner>div h3 {
+    color: rgb(250, 250, 250);
+    font-size: 1.2em;
+    transition: ease-in-out .2s;
+    z-index: 2;
+}
+
+.page.Dashboard .past-matches div.inner>div.win {
+    background-color: #9ddc93;
+}
+
+.page.Dashboard .past-matches div.inner>div.loss {
+    background-color: #ff9898;
+}
+
+.page.Dashboard .past-matches div.inner .scores-div {
+    background-color: rgb(220, 220, 220);
+    padding: 1em;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    z-index: 2;
+}
+
+.page.Dashboard .past-matches div.inner .scores-div .score {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .5em;
+}
+
+.page.Dashboard .past-matches div.inner .scores-div h4 {
+    font-weight: 800;
     font-size: .8em;
-    color: rgb(22, 32, 44);
     margin: 0;
-    font-weight: 300;
 }
 
-.page.Dashboard .past-matches div.inner h2 {
-    text-align: center;
-    font-size: 1.1em;
-    color: rgb(10, 10, 10);
+.page.Dashboard .past-matches div.inner .scores-div .score h4 {
+    font-weight: 400;
+    font-size: .8em;
     margin: 0;
-    font-weight: 500;
+}
+
+.page.Dashboard .past-matches div.inner .scores-div .score h2 {
+    font-weight: 600;
+    color: rgb(10, 10, 10);
+    font-size: 1em;
+    background-color: rgb(250, 250, 250);
+    border-radius: 30px;
+    padding: .5em 1em;
+    margin: 0;
 }
 
 
@@ -466,7 +534,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 }
 
 .page.Tournaments .List {
-    width: 90%;
+    width: 100%;
     gap: 1em;
     margin: 1em 0;
     justify-content: flex-start;
@@ -617,6 +685,17 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     color: rgb(31, 55, 85);
 }
 
+.page.Tournaments .tools button.join {
+    background-color: rgb(110, 193, 117);
+    border: 2px solid rgb(110, 193, 117);
+}
+
+.page.Tournaments .tools button.join:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(110, 193, 117);
+}
+
+
 
 
 /* View Tournament */
@@ -635,10 +714,11 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     font-family: 'Lexend Peta';
     cursor: pointer;
     position: absolute;
-    top: 1em;
-    left: 1em;
+    top: 3em;
+    left: 3em;
     font-size: .8em;
     color: rgb(10, 10, 10);
+    z-index: 10;
 }
 
 .page.Tournaments .t-view .header {
@@ -664,33 +744,50 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     color: rgb(10, 10, 10);
 }
 
+.page.Tournaments .t-view .header>h2.big {
+    font-weight: 600;
+}
+
 .page.Tournaments .t-view .sites {
     margin-top: 1em;
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    gap: .3em;
+    gap: .5em;
     flex-wrap: wrap;
 }
 
 .page.Tournaments .t-view .sites button {
     font-family: 'Lexend Peta';
     font-size: .8em;
-    color: rgb(10, 10, 10);
-    font-weight: 800;
-    border: none;
-    background-color: transparent;
+    color: rgb(50, 50, 50);
+    font-weight: 600;
+    border: 2px solid rgb(250, 250, 250);
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(10, 10, 10, .2);
     cursor: pointer;
-    padding: 0;
-    display: flex;  
+    padding: .4em .8em;
+    border-radius: 15px;
+    display: flex;
+    transition: ease-in-out .2s;
+}
+
+.page.Tournaments .t-view .sites button:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0);
+    border: 2px solid rgba(10, 10, 10, .3);
+}
+
+.page.Tournaments .t-view .sites button.selected {
+    border: 2px solid rgb(10, 10, 10);
+    box-shadow: none;
 }
 
 .page.Tournaments .t-view .main-view {
-    margin-top: 1em;
+    margin: 1em 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: center;
     gap: 1em;
     width: 100%;
 }
@@ -703,7 +800,8 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     width: calc(100% - 2em);
     text-align: left;
     padding: 1em 1em;
-    box-shadow: 0 0 5px rgba(31, 55, 85, .5);
+    border: 2px solid rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(31, 55, 85, .3);
     border-radius: 1em;
     transition: ease-in-out .2s;
     display: flex;
@@ -711,6 +809,11 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     justify-content: space-between;
     flex-wrap: wrap;
     gap: .8em;
+}
+
+.page.Tournaments .t-view .main-view div.team:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0);
+    border: 2px solid rgba(10, 10, 10, .3);
 }
 
 .page.Tournaments .t-view .main-view div.team span {
@@ -792,20 +895,246 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 
 
 
-/* Manage */
+/* Manage Team*/
 
 
+
+
+/* Sub Teams */
+
+.page.Tournaments .t-view .main-view div.sub-team {
+    color: rgb(10, 10, 10);
+    border: none;
+    background-color: rgb(250, 250, 250);
+    cursor: pointer;
+    width: calc(100% - 2em);
+    text-align: left;
+    padding: 1em 1em;
+    border: 2px solid rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(31, 55, 85, .3);
+    border-radius: 1em;
+    transition: ease-in-out .2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .8em;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team.eligible {
+    box-shadow: 0 0 15px rgb(110, 193, 117, 1);
+}
+
+.page.Tournaments .t-view .main-view div.sub-team h1 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.3em;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team>div {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team>div>div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1em;
+    width: 40%;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team>div>div h2 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1em;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button, .page.Tournaments .t-view .main-view .D2 button {
+    margin: 0;
+    font-size: .8em;
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(250, 250, 250);
+    background-color: rgb(250, 250, 250);
+    padding: .8em .8em;
+    color: rgb(10, 10, 10);
+    box-shadow: 0 0 3px rgba(0, 0, 0, .3);
+    border-radius: 10px;
+    width: 100%;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button:hover, .page.Tournaments .t-view .main-view .D2 button:hover {
+    border: 2px solid rgb(10, 10, 10);
+    box-shadow: none;
+}
+
+.page.Tournaments .t-view .main-view button.add, .page.Tournaments .t-view .main-view .D2 button {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.1em;
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(126, 173, 237);
+    background-color: rgb(126, 173, 237);
+    padding: .3em 1.3em;
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page.Tournaments .t-view .main-view button.add:hover, .page.Tournaments .t-view .main-view .D2 button:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.delete, .page.Tournaments .t-view .main-view .D2 button {
+    border: 2px solid rgb(126, 173, 237);
+    background-color: rgb(126, 173, 237);
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.delete:hover, .page.Tournaments .t-view .main-view .D2 button:hover {
+    border: 2px solid rgb(224,71,76);
+    background-color: rgb(224,71,76);
+    color: rgb(250, 250, 250);
+    box-shadow: none;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team .tools {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.delete.team {
+    border: 2px solid rgb(224,71,76);
+    background-color: rgb(224,71,76);
+    color: rgb(250, 250, 250);
+    padding: .3em .8em;
+    width: 7em;
+    box-shadow: none;
+    margin-top: 0em;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.delete.team:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(224, 71, 76);
+    box-shadow: none;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.autofill.team {
+    border: 2px solid rgb(150, 150, 150);
+    background-color: rgb(150, 150, 150);
+    color: rgb(250, 250, 250);
+    padding: .3em .8em;
+    width: 7em;
+    box-shadow: none;
+    margin-top: 0;
+}
+
+.page.Tournaments .t-view .main-view div.sub-team button.autofill.team:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(224, 71, 76);
+    box-shadow: none;
+}
+
+
+
+
+/* D2 */
+
+.page.Tournaments .t-view .main-view .D2 {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    gap: 1em;
+    width: 100%;
+    padding: 0 0 2em 0;
+}
+
+.page.Tournaments .t-view .main-view .D2 .event {
+    padding: 1em 2em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: center;
+    gap: 1em;
+    box-shadow: 0 0 5px rgba(0, 0, 0, .3);
+    border-radius: 1em;
+    width: calc(100% - 4em);
+}
+
+.page.Tournaments .t-view .main-view .D2 h1 {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.3em;
+    color: rgb(10, 10, 10);
+    text-align: center;
+}
+
+.page.Tournaments .t-view .main-view .D2 h2 {
+    margin: 0;
+    font-weight: 400;
+    font-size: .8em;
+    color: rgb(10, 10, 10);
+    text-align: center;
+}
+
+.page.Tournaments .t-view .main-view .D2 .event .players {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em;
+}
+
+.page.Tournaments .t-view .main-view .D2 .event button {
+    font-size: .8em;
+    margin: 0;
+    padding: .8em;
+    width: auto;
+}
+
+.page.Tournaments .t-view .main-view .D2 .event button.add-player {
+    width: 3em;
+    height: 2em;
+    background-color: rgb(110, 170, 117);
+    border: 2px solid rgb(110, 170, 117);
+    color: rgb(250, 250, 250);
+    margin: auto;
+    padding: 0;
+}
+
+.page.Tournaments .t-view .main-view .D2 .event button.add-player:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(110, 170, 117);
+}
 
 
 
 
 /* Register */
 .alert-screen .register {
-    width: 300px;
+    display: none;
+    min-width: 200px;
     background-color: rgb(250, 250, 250);
     border-radius: 1em;
     padding: 3em 1em 2em 1em;
     position: relative;
+}
+
+.alert-screen .register.show {
+    display: block;
 }
 
 .alert-screen .back-btn {
@@ -885,10 +1214,69 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 
 
 
+/* Add Player */
+
+.alert-screen h1 {
+    margin: 0;
+    font-size: 1em;
+    width: 10em;
+    font-weight: 400;
+    text-align: center;
+}
+
+.alert-screen .add-player {
+    display: none;
+    min-width: 200px;
+    background-color: rgb(250, 250, 250);
+    border-radius: 1em;
+    padding: 2.5em 1em 2em 1em;
+    position: relative;
+}
+
+.alert-screen .add-player.show {
+    display: block;
+}
+
+.alert-screen .add-player .players {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .5em;
+    max-height: 300px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: .5em .5em;
+}
+
+.alert-screen .add-player button.player {
+    margin: 0;
+    font-size: .8em;
+    font-weight: 400;
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(250, 250, 250);
+    background-color: rgb(250, 250, 250);
+    padding: .3em .8em;
+    color: rgb(10, 10, 10);
+    box-shadow: 0 0 3px rgba(0, 0, 0, .3);
+    border-radius: 10px;
+    width: 15em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.alert-screen .add-player button.player:hover {
+    border: 2px solid rgb(10, 10, 10);
+    box-shadow: none;
+}
+
+
+
+
 /* Matches */
 
 .page.Matches {
-    width: calc(100% - 15em);
+    width: calc(100% - 16em);
     min-height: 100%;
     display: flex;
     flex-direction: column;
@@ -901,6 +1289,51 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     height: 100%;
     border: none;
 }
+
+
+
+
+
+
+
+@media screen and (max-width: 1000px) {
+    .menu span {
+        display: inline;
+    }
+
+    .main {
+        width: calc(100% + 14em);
+    }
+
+    .main.slid-over {
+        margin-left: -14em;
+    }
+
+    /* .page.Dashboard .stat-container {
+        width: auto;
+        justify-content: center;
+    } */
+}
+
+@media screen and (max-width: 800px) {
+
+    .main, .alert-screen {
+        font-size: .8em;
+    }
+
+}
+
+@media screen and (max-width: 600px) {
+
+    .main, .alert-screen {
+        font-size: .6em;
+    }
+
+}
+
+
+
+
 
 
 

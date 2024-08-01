@@ -10,22 +10,9 @@ attrs = ['team_type', 't1_names', 't2_names', 't1score', 't2score']
 titles = ['Type', 'Team', 'Opponent', 'Score', 'Opponent Score']; // 'Gender'
 to_show = ['team_type', 't1_names', 't2_names', 't1score', 't2score'];
 az = ['team_type', 't1_names', 't2_names'];
-sorts = [1, 0, 0, 0, 0];
 last_search = null;
-sort_initialized = false;
 
 let searchCollege = null;
-
-let gender = 'Male';
-
-
-// Set Page Height
-
-async function setPageHeight() {
-    document.querySelector('div.main').style.minHeight = window.innerHeight - 100 + 'px';
-}
-
-setPageHeight();
 
 async function getPlayers() {
     ps = [];
@@ -241,8 +228,6 @@ async function getMatches() {
             t2_names.push(t2[t2.length-1].first_name + ' ' + t2[t2.length-1].last_name)
         }
 
-        console.log(me[i])
-
         if (me[i].profile_ids_t1.includes(my_id.toString())) {
             me[i].t1 = t1;
             me[i].t2 = t2;
@@ -259,43 +244,6 @@ async function getMatches() {
         }
     }
     return me;
-}
-
-async function sortPlayers(sortBy='first_name', order=1, setup_called=false) {
-    document.querySelector('div.loading').classList.remove('hide');
-    if (az.indexOf(sortBy) !== -1) {
-        if (order == 1) {
-            players.sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
-        } else {
-            players.sort((a, b) => b[sortBy].localeCompare(a[sortBy]));
-        }
-    } else {
-        if (order == 1) {
-            players.sort((a, b) => a[(sortBy === 'ranking' ? 'overall_ranking' : sortBy)] - b[(sortBy === 'ranking' ? 'overall_ranking' : sortBy)]);
-        } else {
-            players.sort((a, b) => b[(sortBy === 'ranking' ? 'overall_ranking' : sortBy)] - a[(sortBy === 'ranking' ? 'overall_ranking' : sortBy)]);
-        }
-    }
-
-    if (!setup_called)
-        await setup(false);
-    setTimeout(() => {
-        document.querySelector('div.loading').classList.add('hide');
-    }, 10)
-}
-
-function argMax(so) {
-    if (so.length == 0)
-        return null, null
-    let ma = sorts[0];
-    let maInd = 0;
-    for(let i = 0; i < sorts.length; i++) {
-        if (sorts[i] > ma) {
-            ma = sorts[i];
-            maInd = i;
-        }
-    }
-    return [ma, maInd];
 }
 
 async function setup(startup=true, back=false) {
@@ -317,10 +265,6 @@ async function setup(startup=true, back=false) {
         }
         document.querySelector('h1.college').innerHTML = 'MATCHES';
         
-        sorts = [1];
-        for (let a = 1; a < to_show.length; a++) {
-            sorts.push(0);
-        }
         // if (last_search != null) {
         //     ;
         // }
@@ -338,42 +282,6 @@ async function setup(startup=true, back=false) {
 
         t += '</tr>';
         table.innerHTML = t;
-        // Sort Headings
-        let headings = table.querySelectorAll('th');
-        for (let i = 0; i < headings.length; i++) {
-            headings[i].addEventListener('click', event => {
-                if (sorts[i] == 0) {
-                    sorts[i] = 1;
-                }
-                if (az.indexOf(attrs[titles.indexOf(event.target.innerText)]) == -1 && attrs[titles.indexOf(event.target.innerText)] != 'ranking' && attrs[titles.indexOf(event.target.innerText)] != 'division') {
-                    sorts[i] = 2;
-                }
-                // else if (sorts[i] == 1) {
-                //     sorts[i] += 1;
-                // } else {
-                //     sorts[i] -= 1;
-                // }
-                for (s in sorts) {
-                    if (s != i) {
-                        sorts[s] = 0;
-                    }
-                }
-                document.querySelector('select.sort').selectedIndex = i;  // to_show.indexOf(attrs[titles.indexOf(event.target.innerText)])
-                sortPlayers(to_show[i], sorts[i])
-            });
-        }
-
-        let select = document.querySelector('select.sort');
-        select.innerHTML = '';
-        for (a in to_show) {
-            // Select
-            let op = document.createElement('option');
-            op.value = to_show[a] + ((az.indexOf(to_show[a]) == -1 && (to_show[a] != 'ranking' && to_show[a] != 'division')) ? '2' : '1');
-            op.innerText = titles[attrs.indexOf(to_show[a])] + (az.indexOf(to_show[a]) == -1 ? ((to_show[a] == 'ranking' || to_show[a] == 'division') ? ' Low->High' : ' High->Low') : ' A->Z');
-            select.appendChild(op);
-        }
-        
-        // await sortBy(to_show)
 
         let additions = document.querySelector('.column-additions');
         additions.innerHTML = '';
@@ -510,41 +418,22 @@ async function showPlayer(event) {
     })
 }
 
-
 async function search(search=null) {
     if (search == null)
         search = document.querySelector('.search-div input').value;
     document.querySelector('div.loading').classList.remove('hide');
 
-    players = [];
-    for (p in allPlayers) {
-        for (key in allPlayers[p]) {
-            if (college == null) {
-                if (to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
-                    players.push(allPlayers[p]);
-                    break;
-                }
-            } else {
-                if (allPlayers[p].college.trimEnd() == college.trimEnd() && to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
-                    players.push(allPlayers[p]);
-                    break;
-                }
+    matches = [];
+    for (p in allMatches) {
+        for (key in allMatches[p]) {
+            if (to_show.includes(key) && allMatches[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
+                matches.push(allMatches[p]);
+                break;
             }
         }
     }
 
-    await sortPlayers(to_show[(argMax(sorts))[1]], sorts[(argMax(sorts))[1]]);
     last_search = search;
-
-    let np = [];
-    for (player in players) {
-        if (gender === 'All' || players[player].gender === gender) {
-            np.push(players[player]);
-        }
-    }
-
-    players = np;
-    delete np;
 
     await setup(false);
     setTimeout(() => {
@@ -580,9 +469,6 @@ async function selectAddition(event) {
 
 setup();
 
-document.querySelector('select.sort').addEventListener('change', event => {
-    sortPlayers(sortBy=event.target.value.substring(0, event.target.value.length-1), parseInt(event.target.value.charAt(event.target.value.length-1)));
-})
 
 document.querySelector('.search-div input').addEventListener('keydown', event => {
     if (event.key == 'Enter') {

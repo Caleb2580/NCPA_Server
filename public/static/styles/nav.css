@@ -9,7 +9,8 @@ body, html {
     font-family: 'Lexend Peta';
     font-weight: 400;
     overflow-x: hidden;
-    z-index: 0;
+    z-index: 5;
+    background-color: rgb(250, 250, 250);
 }
 
 .nav {
@@ -20,13 +21,15 @@ body, html {
     align-items: center;
     padding: 0 2em;
     background-color: rgba(250, 250, 250, 1);
-    box-shadow: inset 0 0 5px rgba(10, 10, 10, .3);
+    box-shadow:  0 0 5px rgba(10, 10, 10, .5);
+    z-index: 100;
+    position: relative;
 }
 
 .nav .left img {
     margin: 0;
     padding: 0;
-    height: 40px;
+    height: 35px;
     cursor: pointer;
 }
 
@@ -75,6 +78,21 @@ body, html {
 
 .nav .right h1 {
     display: none;
+    color: rgb(10, 10, 10);
+}
+
+.nav .right .login {
+    color: rgb(250, 250, 250);
+    background-color: rgb(10, 10, 10);
+    border: 2px solid rgb(10, 10, 10);
+    padding: .8em;
+    border-radius: 1em;
+}
+
+.nav .right .login:hover {
+    font-size: .8em;
+    background-color: rgb(250, 250, 250);
+    color: rgb(10, 10, 10);
 }
 
 
@@ -172,6 +190,52 @@ div.footer div.social-media>h1 span {
     display: block;
 }
 
+/* .hidden-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - 2em);
+    display: none;
+    justify-content: space-around;
+    align-items: center;
+    background-color: rgb(250, 250, 250);
+    gap: 1em;
+    flex-wrap: wrap;
+    padding: 0 1em;
+    overflow-x: auto;
+    height: 2em;
+} */
+
+.hidden-menu {
+    position: absolute;
+    top: 5em;
+    right: 2em;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 0 10px rgba(10, 10, 10, .3);
+    width: 12em;
+    border-radius: .5em;
+    transition: ease-in-out .1s;
+}
+
+.hidden-menu a {
+    color: rgb(10, 10, 10);
+    font-size: .7em;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 1em 0;
+    margin: 0;
+    text-align: center;
+    width: 100%;
+}
+
+.hidden-menu a:hover {
+    background-color: rgb(240, 240, 240);
+}
+
 
 /* @media screen and (max-width: 1200px) {
     .nav {
@@ -192,6 +256,17 @@ div.footer div.social-media>h1 span {
     .nav .right h1 {
         display: inline;
         cursor: pointer;
+        margin: -.25em 0 0 0;
+    }
+        
+    .hidden-menu {
+        display: flex;
+        height: 0;
+        overflow: hidden;
+    }
+    .hidden-menu.selected {
+        height: auto;
+        height: 7em;
     }
 }
 

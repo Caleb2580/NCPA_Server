@@ -8,14 +8,6 @@ titles = ['Ranking', 'College'];  // Overall, Players
 last_search = null;
 
 
-// Set Page Height
-
-async function setPageHeight() {
-    document.querySelector('div.main').style.minHeight = window.innerHeight - 100 + 'px';
-}
-
-setPageHeight();
-
 async function getPlayers() {
     ps = [];
     ps = await fetch('/api/get-players', {

@@ -17,6 +17,15 @@
                     eval(scripts[i].textContent);
                 }
             });
+
+            function hiddenMenu() {
+                let menu = document.querySelector('.hidden-menu');
+                if (menu.classList.contains('selected')) {
+                    menu.classList.remove('selected');
+                } else {
+                    menu.classList.add('selected');
+                }
+            }
         </script>
     </div>
     <div class="main-container">
@@ -42,7 +51,12 @@
     
                 <div class="inner">
                     <h3>Password*</h3>
-                    <input type="text" id="password">
+                    <input type="password" id="password">
+                </div>
+
+                <div class="inner">
+                    <h3>Confirm Password*</h3>
+                    <input type="password" id="confirm-password">
                 </div>
     
                 <div style="width: 100%;" class="inner">
@@ -114,6 +128,7 @@
             let lname = document.querySelector('#lname').value;
             let email = document.querySelector('#email').value;
             let password = document.querySelector('#password').value;
+            let confirm_password = document.querySelector('#confirm-password').value;
             let phone_number = document.querySelector('#phone_number').value;
             
             if (phone_number === '') {
@@ -136,6 +151,9 @@
                 return;
             } else if (password.length < 6) {
                 alert('Your password must have at least 6 characters');
+                return;
+            } else if (confirm_password !== password) {
+                alert('Your passwords do not match');
                 return;
             } else if (phone_number != null && (phone_number.length == 0 || !(phone_number.length === 10 && !isNaN(phone_number)))) {
                 alert('Please enter a valid phone number');
@@ -194,7 +212,8 @@
                 })
             }).then(res => res.json()).then(data => {
                 if (data.success == true) {
-                    alert('Account Created!');
+                    alert('Account Created! Please log in now.');
+                    location.href = '/login';
                 } else {
                     alert(data.error);
                 }
@@ -224,6 +243,15 @@
                 }
             })
         }
+
+        async function checkLogin() {
+            let res = await fetch('/api/logged-in').then(res => res.json());
+            if (res.success === true) {
+                location.href = '/profile';
+            }
+        }
+
+        checkLogin();
 
         document.querySelector('#month').addEventListener('keydown', event => {
             let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];

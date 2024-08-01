@@ -20,6 +20,15 @@ let months = {
     '12': 'Dec'
 };
 
+function openCloseMenu() {
+    let main = document.querySelector('.main');
+
+    if (main.classList.contains('slid-over')) {
+        main.classList.remove('slid-over');
+    } else {
+        main.classList.add('slid-over');
+    }
+}
 
 async function getPlayers() {
     ps = [];
@@ -179,13 +188,9 @@ async function getTournaments() {
             if (broke)
                 break;
         }
-        for (let r in ts['requests']) {
-            console.log(r);
-        }
     }
 
     for (let i in ts['requests']) {
-        console.log(ts['requests'][i])
         for (let type in ts) {
             for (let i in ts[type]) {
                 if (ts['requests'][i].tournament == ts[type][i].name) {
@@ -223,6 +228,19 @@ function delay(ms) {
 
 async function setupGrabs(setup=false) {
     document.querySelector('.loading').classList.remove('hide');
+
+
+    let r = await fetch('/me').then(res => res.json()).catch(err => {
+        window.location = '/login';
+    });
+
+    if (r.success === true) {
+        info = r.info;
+    } else {
+        window.location = '/login';
+        return;
+    }
+
     players = await getPlayers();
     tournaments = await getTournaments();
 
@@ -233,6 +251,9 @@ async function setupGrabs(setup=false) {
         }
     }
 
+    if (info.past_matches == null) {
+        info.past_matches = [];
+    }
     info.past_matches.forEach(match => {
         if (typeof(match.profile_ids_t1) == 'string')
             match.profile_ids_t1 = match.profile_ids_t1.split(',');
@@ -240,17 +261,95 @@ async function setupGrabs(setup=false) {
             match.profile_ids_t2 = match.profile_ids_t2.split(',');
     });
 
-    info.player_teams.forEach(pt => {
-        pt.team_members = pt.team_members.split(',');
-        for (let t in pt.team_members) {
-            pt.team_members[t] = pt.team_members[t].split(':');
-        }
-    })
-
-    
+    if (info.captain_requests == null) {
+        info.captain_requests = [];
+    }
     for (let i in info.captain_requests) {
         info.captain_requests[i].requests = info.captain_requests[i].requests.split(',');
         info.captain_requests[i].request_ids = info.captain_requests[i].request_ids.split(',');
+    }
+
+    if (info.event_types == null) {
+        info.event_types = [];
+    }
+    for (et in info.event_types) {
+        info.event_types[et] = info.event_types[et].name;
+    }
+
+    for (let i in info.player_teams) {
+        // Event players
+        if (info.player_teams[i].event_players == null)
+            info.player_teams[i].event_players = [];
+        else
+            info.player_teams[i].event_players = info.player_teams[i].event_players.split(',');
+        let temp_ets = {};
+        for (let et in info.event_types) {
+            temp_ets[info.event_types[et]] = [];
+        }
+        for (let ep in info.player_teams[i].event_players) {
+            info.player_teams[i].event_players[ep] = info.player_teams[i].event_players[ep].split(':');
+            temp_ets[info.player_teams[i].event_players[ep][0]].push(await getPlayer(parseInt(info.player_teams[i].event_players[ep][1])));
+        }
+        info.player_teams[i].event_players = temp_ets;
+        delete temp_ets;
+
+        // Team members
+        if (info.player_teams[i].team_members == null)
+            info.player_teams[i].team_members = [];
+        else
+            info.player_teams[i].team_members = info.player_teams[i].team_members.split(',');
+
+        for (let t in info.player_teams[i].team_members) {
+            info.player_teams[i].team_members[t] = info.player_teams[i].team_members[t].split(':');
+        }
+
+        // Sub teams
+        if (info.player_teams[i].sub_teams === null) {
+            info.player_teams[i].sub_teams = [];
+        } else {
+            info.player_teams[i].sub_teams = info.player_teams[i].sub_teams.split(',');
+            for (let s in info.player_teams[i].sub_teams) {
+                // TODO: Players
+                info.player_teams[i].sub_teams[s] = info.player_teams[i].sub_teams[s].split(':');
+                info.player_teams[i].sub_teams[s] = {
+                    sub_id: info.player_teams[i].sub_teams[s][0],
+                    ind: info.player_teams[i].sub_teams[s][1]
+                }
+            }
+        }
+
+        // Sub team members
+        if (info.player_teams[i].sub_team_members === null) {
+            info.player_teams[i].sub_team_members = [];
+        } else {
+            info.player_teams[i].sub_team_members = info.player_teams[i].sub_team_members.split(',');
+            sub_mems = {};
+            for (let stm in info.player_teams[i].sub_team_members) {
+                info.player_teams[i].sub_team_members[stm] = info.player_teams[i].sub_team_members[stm].split(':');
+                if (info.player_teams[i].sub_team_members[stm][0] in sub_mems) {
+                    sub_mems[info.player_teams[i].sub_team_members[stm][0]].push(getPlayer(info.player_teams[i].sub_team_members[stm][1]));
+                } else {
+                    sub_mems[info.player_teams[i].sub_team_members[stm][0]] = [getPlayer(info.player_teams[i].sub_team_members[stm][1])];
+                }
+            }
+
+            for (let s in sub_mems) {
+                for (let st in info.player_teams[i].sub_teams) {
+                    if (info.player_teams[i].sub_teams[st].sub_id == s) {
+                        info.player_teams[i].sub_teams[st].members = sub_mems[s]
+                    }
+                }
+            }
+        }
+
+        for (let pt in info.player_teams) {
+            delete info.player_teams[pt].sub_team_members;
+            for (let s in info.player_teams[pt].sub_teams) {
+                if (!('members' in info.player_teams[pt].sub_teams[s])) {
+                    info.player_teams[pt].sub_teams[s].members = [];
+                }
+            }
+        }
     }
 
     if (!setup) {
@@ -258,30 +357,30 @@ async function setupGrabs(setup=false) {
     }
 }
 
-async function setup() {
-
+async function setup(location=null) {
     document.querySelector('.loading').classList.remove('hide');
-
-    let r = await fetch('/me').then(res => res.json()).catch(err => {
-        location.href = '/login';
-    });
-    if (r.success === true) {
-        info = r.info;
-    } else {
-        location.href = '/login';
-        return;
-    }
 
     await setupGrabs(true);
 
-    if (info.player.permission == 5) {
+    if (info.player.permission == 5 && document.querySelector('.items .admin-btn') == null) {
         let admin_btn = document.createElement('button');
         admin_btn.innerText = 'Admin';
+        admin_btn.classList.add('admin-btn');
         admin_btn.setAttribute('onclick', 'location.href = "/admin";')
         document.querySelector('.items').appendChild(admin_btn);
     }
 
-    await select('Tournaments');
+    if (location === null) {
+        const urlParams = new URLSearchParams(window.location.search);
+        let v = urlParams.get('view');
+        if (v === null) {
+            await select('Dashboard');
+        } else {
+            await select(v);
+        }
+    } else {
+        await select(location)
+    }
     // select('Account Info');
 
     
@@ -292,7 +391,10 @@ setup();
 
 
 async function menuSelect(event) {
-    document.querySelector('.items button.selected').classList.remove('selected');
+    let sel = document.querySelector('.items button.selected');
+    
+    if (sel !== null)
+        sel.classList.remove('selected');
     
     event.target.classList.add('selected');
     
@@ -421,7 +523,6 @@ function selectD() {
             let player_tournament = playerRegisteredForTournament(tournaments[type][i].name);
             if (player_tournament == null) {
                 if (tournaments[type][i].registration_open != null) {
-                    console.log(tournaments[type][i].registration_open)
 
                     let now = new Date();
                     now = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
@@ -436,6 +537,7 @@ function selectD() {
                         register.innerText = 'Register';
                         register.setAttribute('onclick', `
                             document.querySelector('.alert-screen').classList.add('show');
+                            document.querySelector('.alert-screen .register').classList.add('show');
                             document.querySelector('.alert-screen .register').setAttribute('id', "reg_${tournaments[type][i].name}")
                         `);
                         
@@ -446,13 +548,20 @@ function selectD() {
             } else {
                 if (player_tournament.player == 1) {
                     let view = document.createElement('button');
-                    view.innerText = 'View';
+                    if (player_tournament.tournament_team_id == null) {
+                        view.innerText = 'Join Team';
+                        view.classList.add('join');
+                    } else {
+                        view.innerText = 'View';
+                    }
+
+                    // view.innerText = 'View';
                     view.setAttribute('onclick', `viewTournament("${player_tournament.tournament}")`)
                     
                     tools.appendChild(view);
                     tool_counter += 1;
                 }
-                
+
                 if (player_tournament.captain == 1) {
                     let manage = document.createElement('button');
                     manage.innerText = 'Manage';
@@ -472,6 +581,7 @@ function selectD() {
                     }
                     register.setAttribute('onclick', `
                         document.querySelector('.alert-screen').classList.add('show');
+                            document.querySelector('.alert-screen .register').classList.add('show');
                         document.querySelector('.alert-screen .register').setAttribute('id', "reg_${tournaments[type][i].name}")
                     `);
                     
@@ -563,8 +673,27 @@ async function removePlayerFromTeam(event, t_name, team_name, pid, team_index) {
             }
         }
         info.player_teams[team_index].team_members.splice(p_ind, 1);
+
+        for (let et in info.player_teams[team_index].event_players) {
+            for (let p in info.player_teams[team_index].event_players[et]) {
+                if (info.player_teams[team_index].event_players[et][p].profile_id == pid) {
+                    info.player_teams[team_index].event_players[et].splice(p, 1);
+                    p -= 1;
+                }
+            }
+        }
+
+        for (let st in info.player_teams[team_index].sub_teams) {
+            for (let m in info.player_teams[team_index].sub_teams[st].members) {
+                if (info.player_teams[team_index].sub_teams[st].members[m].profile_id == pid) {
+                    info.player_teams[team_index].sub_teams[st].members.splice(m, 1);
+                    m -= 1;
+                }
+            }
+        }
+
         if (pid != info.player.profile_id) {
-            manageTournament(currentViewTournament.name);
+            manageTournament(currentViewTournament.name, 'manage');
         } else {
             setup();
         }
@@ -597,7 +726,7 @@ async function changeRequestStatus(event, pid, request_id, team_id, cap_req_ind,
         if (accept === 1) {
             info.player_teams[team_index].team_members.push([pid.toString(), '1', r.cap.toString()]);
         }
-        manageTournament(currentViewTournament.name);
+        manageTournament(currentViewTournament.name, 'manage');
     } else {
         alert(r.error);
     }
@@ -614,8 +743,157 @@ function requestExists(t_name, team_name) {
     return false;
 }
 
-function viewLoner(t_name, t_view) {
+async function removePlayerFromSubTeam(sub_id, profile_id) {
+    document.querySelector('.loading').classList.remove('hide');
+    let r = await fetch('/api/remove-player-from-sub-team', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            sub_id: sub_id,
+            remove_profile_id: profile_id
+        })
+    }).then(r => r.json());
+
+    if (r.success === true) {
+        for (let i in info.player_teams) {
+            for (let st in info.player_teams[i].sub_teams) {
+                if (info.player_teams[i].sub_teams[st].sub_id == sub_id) {
+                    for (let p in info.player_teams[i].sub_teams[st].members) {
+                        if (info.player_teams[i].sub_teams[st].members[p].profile_id == profile_id) {
+                            info.player_teams[i].sub_teams[st].members.splice(p, 1);
+                            manageTournament(currentViewTournament.name, 'd1');
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        alert(r.error);
+    }
+
     
+    document.querySelector('.loading').classList.add('hide');
+}
+
+async function addPlayerToSubTeam(team, pl, s) {
+    document.querySelector('.loading').classList.remove('hide');
+    let body = {
+        'team_name': team.team_name,
+        'tournament': team.tournament,
+        'sub_id': parseInt(team.sub_teams[s].sub_id),
+        'add_profile_id': pl.profile_id
+    }
+    let r = await fetch('/api/add-sub-team-member', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    }).then(r => r.json());
+
+    if (r.success === true) {
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].team_name == team.team_name && info.player_teams[i].tournament == team.tournament) {
+                for (let st in info.player_teams[i].sub_teams) {
+                    if (info.player_teams[i].sub_teams[st].sub_id == team.sub_teams[s].sub_id) {
+                        info.player_teams[i].sub_teams[st].members.push(pl);
+                        manageTournament(currentViewTournament.name, 'd1');
+                        addPlayerX();
+                        document.querySelector('.loading').classList.add('hide');
+                        return;
+                    }
+                }
+            }
+        }
+    } else {
+        alert(r.error);
+    }
+    
+    document.querySelector('.loading').classList.add('hide');
+}
+
+async function addPlayerToEvent(team, et, pl) {
+    document.querySelector('.loading').classList.remove('hide');
+    let body = {
+        'team_id': team.tournament_team_id,
+        'tournament': team.tournament,
+        'event': et,
+        'add_profile_id': pl.profile_id
+    }
+    let r = await fetch('/api/add-player-to-event', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    }).then(r => r.json());
+
+    if (r.success === true) {
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].team_name == team.team_name && info.player_teams[i].tournament == team.tournament) {
+                for (let event_type in info.player_teams[i].event_players) {
+                    if (et == event_type) {
+                        info.player_teams[i].event_players[et].push(pl);
+                        manageTournament(currentViewTournament.name, 'd2');
+                        addPlayerX();
+                        document.querySelector('.loading').classList.add('hide');
+                        return;
+                    }
+                }
+            }
+        }
+    } else {
+        alert(r.error);
+    }
+    
+    document.querySelector('.loading').classList.add('hide');
+}
+
+async function deletePlayerFromEvent(team, et, pl) {
+    document.querySelector('.loading').classList.remove('hide');
+    let body = {
+        'team_id': team.tournament_team_id,
+        'tournament': team.tournament,
+        'event': et,
+        'delete_profile_id': pl.profile_id
+    }
+    let r = await fetch('/api/delete-player-from-event', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    }).then(r => r.json());
+
+    if (r.success === true) {
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].team_name == team.team_name && info.player_teams[i].tournament == team.tournament) {
+                for (let event_type in info.player_teams[i].event_players) {
+                    if (et == event_type) {
+                        for (p in info.player_teams[i].event_players[et]) {
+                            if (info.player_teams[i].event_players[et][p].profile_id == pl.profile_id) {
+                                info.player_teams[i].event_players[et].splice(p, 1);
+                                manageTournament(currentViewTournament.name, 'd2');
+                                addPlayerX();
+                                document.querySelector('.loading').classList.add('hide');
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        alert(r.error);
+    }
+    
+    document.querySelector('.loading').classList.add('hide');
+}
+
+function viewLoner(t_name, t_view) {
     let header = document.createElement('div');
     header.classList.add('header');
 
@@ -648,13 +926,16 @@ function viewLoner(t_name, t_view) {
     sites.appendChild(teams);
 
     teams.addEventListener('click', (event) => {
+        document.querySelectorAll('.page.Tournaments .t-view .sites button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        event.target.classList.add('selected');
+
         let main = document.querySelector('.page.Tournaments .t-view .main-view');
         main.innerHTML = '';
 
         let teams_counter = 0;
-
-        
-        console.log(currentViewTournament)
 
         currentViewTournament.team_names.forEach(team => {
             teams_counter += 1;
@@ -714,7 +995,135 @@ function viewLoner(t_name, t_view) {
 
 }
 
+function viewTeam(t_view) {
+    let header = document.createElement('div');
+    header.classList.add('header');
+
+    let team_name_string = ''
+    for (let i in info.player_teams) {
+        if (info.player_teams[i].tournament == currentViewTournament.name) {
+            team_name_string = info.player_teams[i].team_name;
+            break;
+        }
+    }
+
+    let team_name = document.createElement('h1');
+    team_name.innerText = team_name_string;
+    header.appendChild(team_name);
+
+    let name = document.createElement('h2');
+    name.innerText = currentViewTournament.name;
+    header.appendChild(name);
+    name.classList.add('big');
+
+    if (currentViewTournament.venue !== null) {
+        let loc = document.createElement('h2');
+        loc.innerText = currentViewTournament.venue;
+        header.appendChild(loc);
+    }
+
+    if (currentViewTournament.begin_date !== null) {
+        let date = document.createElement('h2');
+        date.innerText = currentViewTournament.begin_date;
+        if (currentViewTournament.end_date !== null) {
+            date.innerText = currentViewTournament.begin_date + ' - ' + currentViewTournament.end_date;
+        }
+        header.appendChild(date)
+    }
+
+    t_view.appendChild(header);
+
+    let sites = document.createElement('div');
+    sites.classList.add('sites');
+
+    
+    let teams = document.createElement('button');
+    teams.innerText = 'Team';
+    sites.appendChild(teams);
+
+    teams.addEventListener('click', (event) => {
+        // const urlParams = new URLSearchParams(window.location.search);
+        // urlParams.set('path', 'teams');
+        // const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+        // window.history.pushState({ path: newUrl }, '', newUrl);
+
+        document.querySelectorAll('.page.Tournaments .t-view .sites button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        event.target.classList.add('selected');
+
+        let main = document.querySelector('.page.Tournaments .t-view .main-view');
+        main.innerHTML = '';
+        let team_members = [];
+        let team = {};
+        let team_index = -1;
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].tournament == currentViewTournament.name) {
+                team_index = i;
+                team = info.player_teams[i];
+                team_members = info.player_teams[i].team_members;
+                break;
+            }
+        }
+        
+        let teams_counter = 0;
+        for (let i in team_members) {
+            teams_counter += 1;
+
+            let team_d = document.createElement('div');
+            team_d.classList.add('team');
+
+            let team_span = document.createElement('span');
+            let player = getPlayer(team_members[i][0]);
+            team_span.innerText = player.first_name + ' ' + player.last_name;
+            if (team_members[i][1] == 1) {  // Player
+                if (team_members[i][2] == 1) {  // Player and Captain
+                    team_span.innerText += ' (Captain/Player)';
+                } else {  // Just Player
+                    team_span.innerText += ' (Player)';
+                }
+            } else {
+                if (team_members[i][2] == 1) { // Just Captain
+                    team_span.innerText += ' (Captain)';
+                }
+            }
+            team_d.appendChild(team_span)
+
+            let options = document.createElement('div');
+            options.classList.add('options');
+
+            let count = 0;
+
+            let viewPlayer = document.createElement('button');
+            viewPlayer.innerText = 'View';
+            let params = new URLSearchParams({'search': player.first_name + ' ' + player.last_name, 'gender': player.gender});
+            viewPlayer.setAttribute('onclick', `
+                window.open("/players?${params.toString()}")
+            `);
+            options.appendChild(viewPlayer);
+            count += 1;
+            
+            if (count > 0)
+                team_d.appendChild(options);
+
+            main.appendChild(team_d);
+        }
+    });
+
+    t_view.appendChild(sites);
+
+    let main_view = document.createElement('div');
+    main_view.classList.add('main-view');
+    
+    t_view.appendChild(main_view);
+    
+    teams.dispatchEvent(new Event('click'));
+
+}
+
 function viewTournament(t_name) {
+    document.querySelector('.loading').classList.remove('hide');
     currentViewTournament = getTournament(t_name);
 
     let page = document.querySelector('.page.Tournaments');
@@ -738,18 +1147,34 @@ function viewTournament(t_name) {
     
     if (ttm.tournament_team_id == null) {
         viewLoner(t_name, t_view);
+    } else {
+        viewTeam(t_view);
     }
+    document.querySelector('.loading').classList.add('hide');
 
 
 }
 
-function manage(t_name, t_manage) {
+function manage(t_name, t_manage, action=null) {
     let header = document.createElement('div');
     header.classList.add('header');
 
-    let name = document.createElement('h1');
+    let team_name_string = ''
+    for (let i in info.player_teams) {
+        if (info.player_teams[i].tournament == currentViewTournament.name) {
+            team_name_string = info.player_teams[i].team_name;
+            break;
+        }
+    }
+
+    let team_name = document.createElement('h1');
+    team_name.innerText = team_name_string;
+    header.appendChild(team_name);
+
+    let name = document.createElement('h2');
     name.innerText = currentViewTournament.name;
     header.appendChild(name);
+    name.classList.add('big');
 
     if (currentViewTournament.venue !== null) {
         let loc = document.createElement('h2');
@@ -771,11 +1196,17 @@ function manage(t_name, t_manage) {
     let sites = document.createElement('div');
     sites.classList.add('sites');
     
-    let team = document.createElement('button');
-    team.innerText = 'Manage Team';
-    sites.appendChild(team);
+    // Manage Team
+    let manage_team = document.createElement('button');
+    manage_team.innerText = 'Manage Team';
+    sites.appendChild(manage_team);
 
-    team.addEventListener('click', (event) => {
+    manage_team.addEventListener('click', (event) => {
+        document.querySelectorAll('.page.Tournaments .t-view .sites button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        event.target.classList.add('selected');
         let main = document.querySelector('.page.Tournaments .t-view .main-view');
         main.innerHTML = '';
         let team_members = [];
@@ -879,6 +1310,475 @@ function manage(t_name, t_manage) {
         }
     });
 
+
+    // D1
+    let d1 = document.createElement('button');
+    d1.innerText = 'D1';
+    sites.appendChild(d1);
+
+    d1.addEventListener('click', (event) => {
+
+        document.querySelectorAll('.page.Tournaments .t-view .sites button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        event.target.classList.add('selected');
+
+        let main = document.querySelector('.page.Tournaments .t-view .main-view');
+        main.innerHTML = '';
+        let team_members = [];
+        let team = {};
+        let team_index = -1;
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].tournament == currentViewTournament.name) {
+                team_index = i;
+                team = info.player_teams[i];
+                team_members = info.player_teams[i].team_members;
+                break;
+            }
+        }
+
+        if (team.sub_teams !== null) {
+            for (let s in team.sub_teams) {
+                let sub_team_div = document.createElement('div');
+                sub_team_div.classList.add('sub-team');
+
+                let ind = document.createElement('h1');
+                ind.innerText = 'Team ' + team.sub_teams[s].ind;
+                sub_team_div.appendChild(ind);
+
+                let sub_team_players = document.createElement('div');
+                
+                let males = document.createElement('div');
+                let females = document.createElement('div');
+                
+                let male_title = document.createElement('h2');
+                male_title.innerText = 'Males';
+                let female_title = document.createElement('h2');
+                female_title.innerText = 'Females';
+
+                males.appendChild(male_title);
+                females.appendChild(female_title);
+                sub_team_players.appendChild(males);
+                sub_team_players.appendChild(females);
+
+                let male_players = [];
+                let female_players = [];
+                for (m in team.sub_teams[s].members) {
+                    if (team.sub_teams[s].members[m].gender === 'Male') {
+                        male_players.push(team.sub_teams[s].members[m]);
+                    } else if (team.sub_teams[s].members[m].gender === 'Female') {
+                        female_players.push(team.sub_teams[s].members[m]);
+                    }
+                }
+
+                
+                let btns = [];
+                let rm_btns = [];
+
+                let member_counter = 0;
+
+                let m1 = document.createElement('button');
+                if (male_players.length > 0) {
+                    m1.innerText = male_players[0].first_name + ' ' + male_players[0].last_name;
+                    m1.classList.add('delete');
+                    m1.addEventListener('click', () => {
+                        removePlayerFromSubTeam(team.sub_teams[s].sub_id, male_players[0].profile_id);
+                    });
+                    member_counter += 1;
+                } else {
+                    m1.innerText = 'Select Player';
+                    btns.push([0, m1]);
+                }
+                let m2 = document.createElement('button');
+                if (male_players.length > 1) {
+                    m2.innerText = male_players[1].first_name + ' ' + male_players[1].last_name;
+                    m2.classList.add('delete');
+                    m2.addEventListener('click', () => {
+                        removePlayerFromSubTeam(team.sub_teams[s].sub_id, male_players[1].profile_id);
+                    });
+                    member_counter += 1;
+                } else {
+                    m2.innerText = 'Select Player';
+                    btns.push([0, m2]);
+                }
+                let f1 = document.createElement('button');
+                if (female_players.length > 0) {
+                    f1.innerText = female_players[0].first_name + ' ' + female_players[0].last_name;
+                    f1.classList.add('delete');
+                    f1.addEventListener('click', () => {
+                        removePlayerFromSubTeam(team.sub_teams[s].sub_id, female_players[0].profile_id);
+                    });
+                    member_counter += 1;
+                } else {
+                    f1.innerText = 'Select Player';
+                    btns.push([1, f1]);
+                }
+                let f2 = document.createElement('button');
+                if (female_players.length > 1) {
+                    f2.innerText = female_players[1].first_name + ' ' + female_players[1].last_name;
+                    f2.classList.add('delete');
+                    f2.addEventListener('click', () => { 
+                        removePlayerFromSubTeam(team.sub_teams[s].sub_id, female_players[1].profile_id);
+                    });
+                    member_counter += 1;
+                } else {
+                    f2.innerText = 'Select Player';
+                    btns.push([1, f2]);
+                }
+
+                for (let i in btns) {
+                    let btn = btns[i][1];
+                    btn.addEventListener('click', event => {
+                        document.querySelector('.loading').classList.remove('hide');
+                        document.querySelector('.alert-screen').classList.add('show');
+                        document.querySelector('.alert-screen .add-player').classList.add('show');
+
+                        let players_div = document.querySelector('.alert-screen .add-player .players');
+                        players_div.innerHTML = '';
+                        let p_counter = 0;
+
+                        for (let t in team.team_members) {
+                            if (team.team_members[t][1] != 1) {
+                                continue;
+                            }
+                            let found = false;
+                            for (let st in team.sub_teams) {
+                                for (let stm in team.sub_teams[st].members) {
+                                    if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            for (let et in team.event_players) {
+                                for (let p in team.event_players[et]) {
+                                    if (team.event_players[et][p].profile_id == team.team_members[t][0]) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (found) {
+                                continue;
+                            }
+                            let pl = getPlayer(team.team_members[t][0]);
+                            if ((btns[i][0] == 0 && pl.gender != 'Male') || (btns[i][0] == 1 && pl.gender != 'Female')) {
+                                continue;
+                            }
+
+                            let p = document.createElement('button');
+                            p.classList.add('player');
+                            p.innerText = pl.first_name + ' ' + pl.last_name;
+                            p.addEventListener('click', async(event) => {
+                                addPlayerToSubTeam(team, pl, s);
+                            })
+
+                            players_div.appendChild(p);
+                            p_counter += 1;
+                        }
+
+                        if (p_counter == 0) {
+                            let no_p = document.createElement('h1');
+                            no_p.innerText = 'No players to add';
+                            players_div.appendChild(no_p);
+                        }
+                        
+                        document.querySelector('.loading').classList.add('hide');
+                    });
+                };
+
+                if (member_counter == 4) {
+                    sub_team_div.classList.add('eligible');
+                }
+
+                males.appendChild(m1);
+                males.appendChild(m2);
+                females.appendChild(f1);
+                females.appendChild(f2);
+
+                sub_team_div.appendChild(sub_team_players)
+
+                let tools = document.createElement('div');
+                tools.classList.add('tools');
+
+                let autofill_btn = document.createElement('button');
+                autofill_btn.classList.add('autofill');
+                autofill_btn.classList.add('team');
+                autofill_btn.innerText = 'Autofill';
+                autofill_btn.addEventListener('click', async(event) => {
+                    document.querySelector('.loading').classList.remove('hide');
+                    
+                    let males_needed = 2;
+                    let females_needed = 2;
+                    let mn = [];
+                    let fn = [];
+
+                    for (let p in team.sub_teams[s].members) {
+                        if (team.sub_teams[s].members[p].gender == 'Male') {
+                            males_needed -= 1;
+                        } else if (team.sub_teams[s].members[p].gender == 'Female') {
+                            females_needed -= 1;
+                        }
+                    }
+
+                    let unavailable_members = [];
+
+                    for (let st in team.sub_teams) {
+                        for (let p in team.sub_teams[st].members) {
+                            unavailable_members.push(parseInt(team.sub_teams[st].members[p].profile_id))
+                        }
+                    }
+
+                    for (let et in team.event_players) {
+                        for (let p in team.event_players[et]) {
+                            unavailable_members.push(parseInt(team.event_players[et][p].profile_id));
+                        }
+                    }
+
+                    if (males_needed + females_needed > 0) {
+                        for (let m in team.team_members) {
+                            if (team.team_members[m][1] == 1 && !unavailable_members.includes(parseInt(team.team_members[m]))) {
+                                let p = getPlayer(team.team_members[m][0]);
+                                if (males_needed > 0 && p.gender == 'Male') {
+                                    mn.push(p);
+                                    males_needed -= 1;
+                                } else if (females_needed > 0 && p.gender == 'Female') {
+                                    fn.push(p);
+                                    females_needed -= 1;
+                                }
+                                if (males_needed + females_needed == 0) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    for (let m in mn) {
+                        addPlayerToSubTeam(team, mn[m], s);
+                    }
+
+                    for (let f in fn) {
+                        addPlayerToSubTeam(team, fn[f], s);
+                    }
+                    document.querySelector('.loading').classList.add('hide');
+
+                });
+                tools.appendChild(autofill_btn);
+
+                let delete_btn = document.createElement('button');
+                delete_btn.classList.add('delete');
+                delete_btn.classList.add('team');
+                delete_btn.innerText = 'Delete';
+                delete_btn.addEventListener('click', async(event) => {
+                    document.querySelector('.loading').classList.remove('hide');
+                    let r = await fetch('/api/delete-sub-team', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sub_id: team.sub_teams[s].sub_id
+                        })
+                    }).then(r => r.json());
+
+                    if (r.success) {
+                        let st_ind = team.sub_teams[s].ind;
+                        team.sub_teams.splice(s, 1);
+                        for (let st in team.sub_teams) {
+                            if (team.sub_teams[st].ind > st_ind) {
+                                team.sub_teams[st].ind -= 1;
+                            }
+                        }
+                        manageTournament(currentViewTournament.name, 'd1');
+                    } else {
+                        alert(r.error);
+                    }
+                    document.querySelector('.loading').classList.add('hide');
+
+                });
+                tools.appendChild(delete_btn);
+
+                sub_team_div.appendChild(tools);
+
+                main.appendChild(sub_team_div);
+            }
+        }
+
+        let addBtn = document.createElement('button');
+        addBtn.classList.add('add');
+        addBtn.innerText = '+';
+        addBtn.addEventListener('click', async(event) => {
+            document.querySelector('.loading').classList.remove('hide');
+            let r = await fetch('/api/add-sub-team', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    team_name: team.team_name,
+                    tournament: team.tournament
+                })
+            }).then(r => r.json());
+
+            if (r.success) {
+                for (i in info.player_teams) {
+                    if (info.player_teams[i].tournament_team_id == team.tournament_team_id) {
+                        info.player_teams[i].sub_teams.push(r.sub_team);
+                        manageTournament(currentViewTournament.name, "d1");
+                        document.querySelector('.loading').classList.add('hide');
+                        return;
+                    }
+                }
+            } else {
+                alert(r.error);
+            }
+            document.querySelector('.loading').classList.add('hide');
+        })
+        main.appendChild(addBtn);
+
+    });
+
+
+    // D2
+    let d2 = document.createElement('button');
+    d2.innerText = 'D2';
+    sites.appendChild(d2);
+
+    d2.addEventListener('click', (event) => {
+
+        document.querySelectorAll('.page.Tournaments .t-view .sites button').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+
+        event.target.classList.add('selected');
+
+        let main = document.querySelector('.page.Tournaments .t-view .main-view');
+        main.innerHTML = '';
+        let team_members = [];
+        let team = {};
+        let team_index = -1;
+        for (let i in info.player_teams) {
+            if (info.player_teams[i].tournament == currentViewTournament.name) {
+                team_index = i;
+                team = info.player_teams[i];
+                team_members = info.player_teams[i].team_members;
+                break;
+            }
+        }
+        
+        let d2_div = document.createElement('div');
+        d2_div.classList.add('D2');
+        main.appendChild(d2_div);
+
+        let btns = [];
+
+        for (let et in team.event_players) {
+            let event_div = document.createElement('div');
+            event_div.classList.add('event');
+
+            let h1 = document.createElement('h1');
+            h1.innerText = et;
+            event_div.appendChild(h1);
+
+            let players_div = document.createElement('div');
+            players_div.classList.add('players');
+            
+            if (team.event_players[et].length > 0)
+                event_div.appendChild(players_div)
+
+            for (let p in team.event_players[et]) {
+                let player_button = document.createElement('button');
+                player_button.classList.add('delete');
+                player_button.addEventListener('click', (event) => {
+                    deletePlayerFromEvent(team, et, team.event_players[et][p]);
+                })
+                player_button.innerText = team.event_players[et][p].first_name + ' ' + team.event_players[et][p].last_name;
+                players_div.appendChild(player_button);
+            }
+
+            if (team.event_players[et].length == 0) {
+                let h2 = document.createElement('h2');
+                h2.innerText = 'No Players'
+                event_div.appendChild(h2);
+            }
+
+            let add_player_button = document.createElement('button');
+            add_player_button.classList.add('add-player');
+            add_player_button.innerText = '+';
+            event_div.appendChild(add_player_button);
+            if (et.toLocaleLowerCase().includes('women')) {
+                btns.push([0, add_player_button, et]);
+            } else if (et.toLocaleLowerCase().includes('men')) {
+                btns.push([1, add_player_button, et]);
+            } else {
+                btns.push([2, add_player_button, et]);
+            }
+
+            d2_div.appendChild(event_div);
+        }
+
+        for (let i in btns) {
+            let btn = btns[i][1];
+            btn.addEventListener('click', event => {
+                document.querySelector('.loading').classList.remove('hide');
+                document.querySelector('.alert-screen').classList.add('show');
+                document.querySelector('.alert-screen .add-player').classList.add('show');
+
+                let players_div = document.querySelector('.alert-screen .add-player .players');
+                players_div.innerHTML = '';
+                let p_counter = 0;
+
+                for (let t in team.team_members) {
+                    if (team.team_members[t][1] != 1) {
+                        continue;
+                    }
+                    let found = false;
+                    for (let st in team.sub_teams) {
+                        for (let stm in team.sub_teams[st].members) {
+                            if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    for (let p in team.event_players[btns[i][2]]) {
+                        if (team.event_players[btns[i][2]][p].profile_id == team.team_members[t][0]) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        continue;
+                    }
+                    let pl = getPlayer(team.team_members[t][0]);
+                    if ((btns[i][0] == 1 && pl.gender != 'Male') || (btns[i][0] == 0 && pl.gender != 'Female')) {
+                        continue;
+                    }
+
+                    let p = document.createElement('button');
+                    p.classList.add('player');
+                    p.innerText = pl.first_name + ' ' + pl.last_name;
+                    p.addEventListener('click', async(event) => {
+                        addPlayerToEvent(team, btns[i][2], pl);
+                    })
+
+                    players_div.appendChild(p);
+                    p_counter += 1;
+                }
+
+                if (p_counter == 0) {
+                    let no_p = document.createElement('h1');
+                    no_p.innerText = 'No players to add';
+                    players_div.appendChild(no_p);
+                }
+                
+                document.querySelector('.loading').classList.add('hide');
+            });
+        };
+
+    });
+
     t_manage.appendChild(sites);
 
     let main_view = document.createElement('div');
@@ -886,11 +1786,17 @@ function manage(t_name, t_manage) {
     
     t_manage.appendChild(main_view);
     
-    team.dispatchEvent(new Event('click'));
+    if (action == 'd1') {
+        d1.dispatchEvent(new Event('click'));
+    } else if (action == 'd2') {
+        d2.dispatchEvent(new Event('click'));
+    } else {
+        manage_team.dispatchEvent(new Event('click'));
+    }
 }
 
-function manageTournament(t_name) {
-
+function manageTournament(t_name, action=null) {
+    document.querySelector('.loading').classList.remove('hide');
     currentViewTournament = getTournament(t_name);
 
     let ttm = playerRegisteredForTournament(currentViewTournament.name);
@@ -917,11 +1823,21 @@ function manageTournament(t_name) {
     page.appendChild(t_manage);
 
     if (ttm.captain == 1) {
-        manage(t_name, t_manage);
+        manage(t_name, t_manage, action);
     }
+    document.querySelector('.loading').classList.add('hide');
 }
 
 async function select(p) {
+
+    document.querySelectorAll('.stuff .items button').forEach(btn => {
+        if (btn.innerText === p.replace('-', ' ')) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+
     let page = document.querySelector('.page');
     page.innerHTML = '';
 
@@ -934,6 +1850,11 @@ async function select(p) {
     if (info === null) {
         return;
     }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    urlParams.set('view', p);
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
 
     if (p === 'Dashboard') {
         let name_div = document.createElement('div');
@@ -1025,6 +1946,7 @@ async function select(p) {
             m.appendChild(match_type);
             t1 = [];
             t2 = [];
+
             if (typeof(match.profile_ids_t1) == 'string')
                 match.profile_ids_t1 = match.profile_ids_t1.split(',');
             if (typeof(match.profile_ids_t2) == 'string')
@@ -1052,6 +1974,15 @@ async function select(p) {
                 }
             }
 
+            let cover = document.createElement('div');
+            cover.classList.add('cover');
+            m.appendChild(cover);
+
+            let scores_div = document.createElement('div');
+            scores_div.classList.add('scores-div');
+
+            let score1 = document.createElement('div');
+            score1.classList.add('score');
 
             let h4 = document.createElement('h4');
             for (p in t1) {
@@ -1062,11 +1993,20 @@ async function select(p) {
                 }
             }
             
-            m.appendChild(h4);
+            score1.appendChild(h4);
+
+            team1score = document.createElement('h2');
+            team1score.innerText = match.t1score;
+            score1.appendChild(team1score);
+
+            scores_div.appendChild(score1);
 
             let vs = document.createElement('h4');
-            vs.innerHTML = `<span style="font-weight: 400;">VS</span>`;
-            m.appendChild(vs);
+            vs.innerText = 'VS'
+            scores_div.appendChild(vs);
+
+            let score2 = document.createElement('div');
+            score2.classList.add('score');
 
             h4 = document.createElement('h4');
             for (p in t2) {
@@ -1077,12 +2017,20 @@ async function select(p) {
                 }
             }
             
-            m.appendChild(h4);
+            score2.appendChild(h4);
 
-            vs = document.createElement('h2');
-            vs.innerHTML = `${match.t1score} <span style="font-weight: 400;">-</span> ${match.t2score}`;
-            m.appendChild(vs);
+            
+            team2score = document.createElement('h2');
+            team2score.innerText = match.t2score;
+            score2.appendChild(team2score);
 
+            
+            scores_div.appendChild(score2);
+
+            // vs = document.createElement('h2');
+            // vs.innerHTML = `${match.t1score} <span style="font-weight: 400;">-</span> ${match.t2score}`;
+            // m.appendChild(vs);
+            m.appendChild(scores_div);
             inner.appendChild(m);
         })
 
@@ -1249,139 +2197,6 @@ async function select(p) {
 
         selectD();
     } else if (p === 'Matches') {
-        // let inner = `
-        //     <div class="loading hide">
-        //         <div class="ring">Loading
-        //             <span></span>
-        //         </div>
-        //     </div>
-
-        //     <div class="main-container">
-        //         <div class="main">
-        //             <style>
-        //                 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-
-        //                 h2.powered {
-        //                     font-weight: 400;
-        //                     font-size: 1em;
-        //                     position: absolute;
-        //                     top: 0;
-        //                     right: 0;
-        //                     margin: 0;
-        //                     margin-top: .15em;
-        //                     padding: 0;
-        //                     text-align: right;
-        //                 }
-
-        //                 .back-btn {
-        //                     display: none;
-        //                     margin: 0;
-        //                     padding: 0;
-        //                 }
-
-        //                 .back-btn.show {
-        //                     display: block;
-        //                 }
-
-        //                 .gender-div {
-        //                     border-radius: 2em;
-        //                     margin: 0;
-        //                     display: flex;
-        //                     justify-content: space-around;
-        //                     align-items: center;
-        //                     flex-direction: row;
-        //                     background-color: rgb(250, 250, 250);
-        //                     width: 300px;
-        //                     padding: 0;
-        //                     overflow: hidden;
-        //                 }
-
-        //                 .gender-div div {
-        //                     display: flex;
-        //                     justify-content: center;
-        //                     align-items: center;
-        //                     padding: 0;
-        //                     margin: 0;
-        //                     width: 100%;
-        //                     height: 100%;
-        //                 }
-
-        //                 .gender-div div h1 {
-        //                     font-size: .7em;
-        //                     padding: 1em;
-        //                     color: rgb(10, 10, 10);
-        //                     margin: 0;
-        //                     cursor: pointer;
-        //                 }
-
-        //                 .gender-div div.selected {
-        //                     background-color: rgb(126, 173, 237);
-        //                 }
-
-        //                 .gender-div div.selected h1 {
-        //                     color: rgb(250, 250, 250);
-        //                 }
-
-        //                 @media screen and (max-width: 600px) {
-        //                     h2.powered {
-        //                         font-size: .9em;
-        //                         margin-top: .35em;
-        //                     }
-
-        //                     .gender-div {
-        //                         width: 200px;
-        //                     }
-        //                 }
-
-        //                 @media screen and (max-width: 500px) {
-        //                     h2.powered {
-        //                         font-size: .8em;
-        //                         margin-top: .5em;
-        //                     }
-        //                 }
-
-        //                 @media screen and (max-width: 350px) {
-        //                     h2.powered {
-        //                         margin-top: .35em;
-        //                         font-size: .65em;
-        //                     }
-        //                 }
-        //             </style>
-        //             <h2 class="powered">Powered by <span style="font-family: 'Space Mono'; font-weight: 700; color: rgb(0, 0, 130); cursor: pointer;" onclick="window.open('https\://vitalit.solutions');"><span style="text-decoration: underline;">V</span>italIT <span style="text-decoration: underline;"">S</span>olutions</span></h2>
-        //             <h1 class="college show">PLAYERS</h1>
-        //             <h2 class="college"></h2>
-        //             <div class="search-div">
-        //                 <input type="text" placeholder="Search">
-        //                 <button class="search" onclick="search();"><img src="/images/search.png" alt=""></button>
-        //                 <button class="x-btn" onclick="document.querySelector('.search-div input').value = ''; search();">&#x2716;</button>
-        //             </div>
-        //             <div class="gender-div">
-        //                 <div onclick="selectGender(event, false)" class="selected" id="gender-male"><h1 onclick="selectGender(event, true)">Male</h1></div>
-        //                 <div onclick="selectGender(event, false)"><h1 onclick="selectGender(event, true)">Female</h1></div>
-        //                 <!-- <div onclick="selectGender(event, false)" id="gender-all"><h1 onclick="selectGender(event, true)">All</h1></div> -->
-        //             </div>
-        //             <div>
-        //                 <select name="" id="" class="sort">
-        //                     <!-- <option value="first_name1">Ranking</option> -->
-        //                 </select>
-        //             </div>
-        //             <div class="column-additions">
-        //             </div>
-        //             <div class="container">
-        //                 <table class="player-table">
-                            
-        //                 </table>
-        //             </div>
-        //             <p>Note: () around a rating indicate that a player isn't fully eligible, as they haven't played enough matches in all match types. You must play 5 games in a specific match type to become eligible in that match type.<br>**Click on a college to view more details**</p>
-        //             <div class="refresh-div">
-        //                 <button onclick="setup();">REFRESH</button>
-        //             </div>
-        //         </div>
-        //     </div>
-        // `;
-
-        // page.innerHTML = inner;
-    
         let iframe = document.createElement('iframe');
         iframe.setAttribute('src', '/profile-matches.html');
 
@@ -1390,8 +2205,6 @@ async function select(p) {
         ;
     }
 }
-
-
 
 
 // Helper functions

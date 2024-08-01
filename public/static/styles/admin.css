@@ -20,12 +20,32 @@ html, body {
     display: flex;
     justify-content: space-around;
     align-items: center;
+    transition: ease-in-out .3s
 }
 
 .menu {
     width: 15em;
     height: 100%;
     background-color: rgb(10, 10, 10);
+    position: relative;
+}
+
+.menu span {
+    display: none;
+    position: absolute;
+    color: rgb(10, 10, 10);
+    background-color: transparent;
+    height: 1.5em;
+    width: 1.5em;
+    cursor: pointer;
+    text-align: center;
+    top: 0;
+    right: -1.5em;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    z-index: 10;
+    font-weight: 100;
+    font-size: 1.5em;
 }
 
 .page {
@@ -116,7 +136,7 @@ html, body {
 
 
 .page .Tournaments>h5 {
-    width: 100%;
+    width: 90%;
     text-align: left;
     margin: 0;
 }
@@ -296,6 +316,7 @@ html, body {
     border-radius: 2em;
     cursor: pointer;
     transition: ease-in-out .2s;
+    font-size: .8em;
 }
 
 .page .Tournaments .tournament-container .tools-container .edit:hover {
@@ -312,6 +333,7 @@ html, body {
     border-radius: 2em;
     cursor: pointer;
     transition: ease-in-out .2s;
+    font-size: .8em;
 }
 
 .page .Tournaments .tournament-container .tools-container .delete:hover {
@@ -348,7 +370,7 @@ html, body {
     justify-content: center;
     align-items: flex-start;
     flex-wrap: wrap;
-    gap: 1em;
+    gap: 0 1em;
     font-size: 1.2em;
 }
 
@@ -402,7 +424,7 @@ html, body {
 .page .Tournaments .Create .info .inner textarea {
     resize: none;
     font-size: .8em;
-    height: 18em;
+    height: 8.5em;
 }
 
 .page .Tournaments .Create .info .inner>div {
@@ -418,6 +440,23 @@ html, body {
     font-size: 1em;
 }
 
+.page .Tournaments .Create .info .inner>div.money {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: .2em;
+    width: calc(100% - 1em);
+    border: 2px solid rgb(225, 225, 225);
+    border-radius: 10px;
+    padding: 0em .5em;
+}
+
+.page .Tournaments .Create .info .inner>div.money input {
+    border: none;
+    font-size: 1em;
+}
+
 
 .page .Tournaments .Create .info .inner button {
     font-family: 'Lexend Peta';
@@ -427,7 +466,7 @@ html, body {
     font-size: .7em;
     padding: .5em 1em;
     border-radius: 10px;
-    margin: auto;
+    margin: 0 auto;
     margin-bottom: .25em;
     cursor: pointer;
     transition: ease-in-out .2s;
@@ -450,6 +489,7 @@ html, body {
     justify-content: flex-start;
     align-items: flex-start;
     gap: 1em;
+    width: 90%;
 }
 
 .page .Tournaments .View .header {
@@ -486,16 +526,24 @@ html, body {
 .page .Tournaments .View .sites button {
     font-family: 'Lexend Peta';
     font-size: .8em;
-    color: rgb(10, 10, 10);
-    font-weight: 800;
-    border: none;
-    background-color: transparent;
+    color: rgb(50, 50, 50);
+    font-weight: 600;
+    border: 2px solid rgb(250, 250, 250);
+    background-color: rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(10, 10, 10, .2);
     cursor: pointer;
-    padding: 0;
+    padding: .4em .8em;
+    border-radius: 15px;
+    display: flex;
+    transition: ease-in-out .2s;
+}
+
+.page .Tournaments .View .sites button.selected {
+    border: 2px solid rgb(10, 10, 10);
 }
 
 .page .Tournaments .View .main-view {
-    margin-top: 1em;
+    margin-top: 0em;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -504,24 +552,75 @@ html, body {
     width: 100%;
 }
 
-.page .Tournaments .View .main-view button {
-    font-family: 'Lexend Peta';
-    font-size: .8em;
+.page .Tournaments .View .main-view div.team {
     color: rgb(10, 10, 10);
-    font-weight: 800;
     border: none;
-    background-color: transparent;
+    background-color: rgb(250, 250, 250);
     cursor: pointer;
-    width: 100%;
+    width: calc(100% - 2em);
     text-align: left;
     padding: 1em 1em;
-    box-shadow: 0 0 5px rgba(31, 55, 85, .5);
+    border: 2px solid rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(10, 10, 10, .3);
+    border-radius: 1em;
+    transition: ease-in-out .2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .8em;
+}
+
+.page .Tournaments .View .main-view div.team:hover {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0);
+    border: 2px solid rgba(10, 10, 10, .3);
+}
+
+.page .Tournaments .View .main-view div.team span {
+    margin: 0;
+    font-weight: 400;
+    font-size: .9em;
+}
+
+.page .Tournaments .View .main-view div.team div.options {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5em;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .View .main-view div.team button {
+    font-family: 'Lexend Peta';
+    font-size: .7em;
+    color: rgb(250, 250, 250);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    padding: .5em .5em;
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
     border-radius: 1em;
     transition: ease-in-out .2s;
 }
 
+.page .Tournaments .View .main-view div.team button:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
 
-.page .Tournaments .View .main-view .tools {
+.page .Tournaments .View .main-view div.team button.cancel {
+    background-color: rgb(224,71,76);
+    border: 2px solid rgb(224,71,76);
+}
+
+.page .Tournaments .View .main-view div.team button.cancel:hover {
+    color: rgb(224,71,76);
+    background-color: rgb(250, 250, 250);
+}
+
+
+.page .Tournaments .View .main-view>.tools {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -529,16 +628,21 @@ html, body {
     flex-wrap: wrap;
 }
 
-.page .Tournaments .View .main-view .tools .create {
+.page .Tournaments .View .main-view>.tools .create {
     background-color: rgb(126, 173, 237);
     border: 2px solid rgb(126, 173, 237);
+    border-radius: 1em;
+    font-weight: 600;
+    font-family: 'Lexend Peta';
     padding: .5em .5em;
     color: rgb(250, 250, 250);
     box-shadow: none;
     width: auto;
+    cursor: pointer;
+    font-size: .9em;
 }
 
-.page .Tournaments .View .main-view .tools .create:hover {
+.page .Tournaments .View .main-view>.tools .create:hover {
     background-color: rgb(250, 250, 250);
     color: rgb(126, 173, 237);
 }
@@ -583,11 +687,30 @@ html, body {
     margin-top: 2em;
 }
 
+.page .Tournaments .View.Team div{
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.page .Tournaments .View.Team>h1.big {
+    font-size: 1.5em;
+}
+
 .page .Tournaments .View.Team>h1 {
-    font-weight: 500;
-    font-size: 1.3em;
-    margin: 0;
     color: rgb(10, 10, 10);
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0;
+}
+
+.page .Tournaments .View.Team input {
+    font-family: 'Lexend Peta';
+    border: 2px solid rgb(10, 10, 10);
+    border-radius: 1em;
+    font-size: .9em;
+    padding: .5em;
+    background-color: rgb(250, 250, 250);
+    width: 30em;
 }
 
 .page .Tournaments .View.Team .captain-key {
@@ -611,7 +734,7 @@ html, body {
     cursor: pointer;
 }
 
-.page .Tournaments .View.Team .captain-key button {
+.page .Tournaments .View.Team button {
     background-color: rgb(126, 173, 237);
     border: 2px solid rgb(126, 173, 237);
     padding: .5em .5em;
@@ -624,7 +747,7 @@ html, body {
     font-size: .65em;
 }
 
-.page .Tournaments .View.Team .captain-key button:hover {
+.page .Tournaments .View.Team button:hover {
     background-color: rgb(250, 250, 250);
     color: rgb(126, 173, 237);
 }
@@ -639,5 +762,226 @@ html, body {
     color: rgb(150, 150, 150);
 }
 
+
+
+/* Profiles */
+
+.page .Profiles {
+    gap: 1em;
+}
+
+.page .Profiles h1 {
+    font-size: 1.5em;
+    font-weight: 400;
+    margin: 0;
+}
+
+.page .Profiles .search {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .5em;
+    padding: .5em; 
+}
+
+.page .Profiles .search h2 {
+    font-weight: 400;
+    font-size: 1em;
+    color: rgb(10, 10, 10);
+    margin: 0;
+}
+
+.page .Profiles .search input {
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid rgb(185, 185, 185);
+    font-family: 'Lexend Peta';
+    font-size: 1em;
+    outline: none;
+    padding: .25em;
+}
+
+.page .Profiles .profiles-div {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1em;
+}
+
+.page .Profiles div.profile {
+    color: rgb(10, 10, 10);
+    border: none;
+    background-color: rgb(250, 250, 250);
+    width: calc(100% - 2em);
+    text-align: left;
+    padding: .5em 1em;
+    border: 2px solid rgb(250, 250, 250);
+    box-shadow: 0 0 5px rgba(0, 0, 0, .4);
+    border-radius: 1em;
+    transition: ease-in-out .2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: .8em;
+    align-items: flex-start;
+    height: 2em;
+    position: relative;
+    overflow: hidden;
+    transition: ease-in-out .3s;
+}
+
+.page .Profiles div.profile.show{
+    height: 22.5em;
+}
+
+.page .Profiles div.profile .top {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.page .Profiles div.profile h1 {
+    font-size: 1em;
+    margin: 0;
+}
+
+.page .Profiles div.profile h2 {
+    font-size: .8em;
+    margin: 0;
+    text-align: left;
+    font-weight: 400;
+}
+
+.page .Profiles .profile button {
+    font-family: 'Lexend Peta';
+    font-size: .7em;
+    color: rgb(250, 250, 250);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    padding: .5em .5em;
+    background-color: rgb(126, 173, 237);
+    border: 2px solid rgb(126, 173, 237);
+    border-radius: 1em;
+    transition: ease-in-out .2s;
+}
+
+.page .Profiles .profile button:hover {
+    background-color: rgb(250, 250, 250);
+    color: rgb(126, 173, 237);
+}
+
+.page .Profiles .profile button.delete {
+    background-color: rgb(224,71,76);
+    border: 2px solid rgb(224,71,76);
+}
+
+.page .Profiles .profile button.delete:hover {
+    color: rgb(224,71,76);
+    background-color: rgb(250, 250, 250);
+}
+
+.page .Profiles div.profile .bottom {
+    /* position: absolute; */
+    /* top: 2em;
+    left: 0; */
+    width: calc(100% - 2em);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 0 1em;
+    gap: .3em;
+}
+
+.page .Profiles div.profile .bottom>div {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .5em;
+    border: none;
+    /* border-bottom: 2px solid rgba(10, 10, 10, .2); */
+}
+
+.page .Profiles div.profile .bottom>div input {
+    font-family: 'Lexend Peta';
+    outline: none;
+    border: none;
+    padding: .2em .5em;
+    background-color: transparent;
+    color: rgb(10, 10, 10);
+    font-size: .8em;
+    border-bottom: 1px solid rgb(10, 10, 10);
+    width: 20em;
+}
+
+.page .Profiles div.profile .bottom>div button.x {
+    display: none;
+    font-size: .8em;
+    margin: 0;
+    font-weight: 400;
+    background-color: transparent;
+    border: none;
+    color: rgb(185, 185, 185);
+    padding: 0;
+}
+
+.page .Profiles div.profile .bottom>div button.x.show {
+    display: inline;
+}
+
+.page .Profiles div.profile .bottom>div button.x.show:hover {
+    color: rgb(10, 10, 10);
+}
+
+.page .Profiles div.profile .bottom>div input::placeholder {
+    color: rgb(185, 185, 185);
+}
+
+.page .Profiles div.profile .bottom button.save {
+    margin: .5em auto 0 auto;
+}
+
+
+@media screen and (max-width: 1000px) {
+    .menu span {
+        display: inline;
+    }
+
+    .main {
+        width: calc(100% + 14em);
+    }
+
+    .main.slid-over {
+        margin-left: -14em;
+    }
+
+    /* .page.Dashboard .stat-container {
+        width: auto;
+        justify-content: center;
+    } */
+}
+
+@media screen and (max-width: 800px) {
+
+    .main {
+        font-size: .8em;
+    }
+
+}
+
+@media screen and (max-width: 600px) {
+
+    .main {
+        font-size: .6em;
+    }
+
+}
 
 

@@ -17,14 +17,6 @@ let searchCollege = null;
 let gender = 'Male';
 
 
-// Set Page Height
-
-async function setPageHeight() {
-    document.querySelector('div.main').style.minHeight = window.innerHeight - 100 + 'px';
-}
-
-setPageHeight();
-
 async function getPlayers() {
     ps = [];
     ps = await fetch('/api/get-players', {
@@ -39,7 +31,7 @@ async function getPlayers() {
     ps_f = [];
 
     for (p in ps) {
-        if (ps[p].divison == null && ps[p].gender == null) {
+        if ((ps[p].divison == null && ps[p].gender == null) || (ps[p].singles_games_played + ps[p].doubles_games_played + ps[p].mixed_doubles_games_played == 0)) {
             continue;
         }
         for (key in ps[p]) {
@@ -367,6 +359,17 @@ async function setup(startup=true, back=false) {
             div.appendChild(h2);
             additions.appendChild(div);
         }
+
+        if (searchParams.size > 0 && searchParams.has('gender')) {
+            let gens = document.querySelectorAll('.gender-div div');
+            if (searchParams.get('gender').toLocaleLowerCase() === 'female') {
+                gens[1].dispatchEvent(new Event('click'));
+            }
+        }
+        if (searchParams.size > 0 && searchParams.has('search')) {
+            document.querySelector('.search-div input').value = searchParams.get('search');
+            document.querySelector('.search-div button').dispatchEvent(new Event('click'));
+        }
     }
 
     let playersE = table.querySelectorAll('tr');
@@ -625,18 +628,22 @@ async function search(search=null) {
 
     players = [];
     for (p in allPlayers) {
-        for (key in allPlayers[p]) {
-            if (college == null) {
-                if (to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
-                    players.push(allPlayers[p]);
-                    break;
+        if ((allPlayers[p].first_name + ' ' + allPlayers[p].last_name).toLocaleLowerCase().includes(search.toLocaleLowerCase())) {
+            players.push(allPlayers[p]);
+        } else {
+            for (key in allPlayers[p]) {
+                if (college == null) {
+                    if (to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
+                        players.push(allPlayers[p]);
+                        break;
+                    }
+                } else {
+                    if (allPlayers[p].college.trimEnd() == college.trimEnd() && to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
+                        players.push(allPlayers[p]);
+                        break;
+                    }
                 }
-            } else {
-                if (allPlayers[p].college.trimEnd() == college.trimEnd() && to_show.includes(key) && allPlayers[p][key].toString().toLowerCase().includes(search.toLowerCase())) {
-                    players.push(allPlayers[p]);
-                    break;
-                }
-            }
+            }   
         }
     }
 
