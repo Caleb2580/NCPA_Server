@@ -1046,36 +1046,37 @@ app.get('/api/get-tournaments', async(req, res) => {
         if (user === null || !('profile_id' in user)) {
             throw new Error('');
         }
+        
+        // pool.query(`
+        //     SELECT ${to_grab}
+        //     FROM Tournament
+        //     WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+        //     AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+        //     ORDER BY begin_date DESC;
+        // `),
 
         let r = await Promise.all([
-            // pool.query(`
-            //     SELECT ${to_grab}
-            //     FROM Tournament
-            //     WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-            //     AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-            //     ORDER BY begin_date DESC;
-            // `),
-            pool.query(`
+            await pool.query(`
                 SELECT *
                 FROM Tournament
                 ORDER BY begin_date DESC;
             `),
 
-            pool.query(`
+            await pool.query(`
                 SELECT ${to_grab}
                 FROM Tournament
                 WHERE end_date < DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
                 ORDER BY begin_date DESC;
             `),
 
-            pool.query(`
+            await pool.query(`
                 SELECT ${to_grab}
                 FROM Tournament
                 WHERE begin_date > DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
                 ORDER BY begin_date ASC;
             `),
             
-            pool.query(`
+            await pool.query(`
                 SELECT
                     T.name AS tournament_name,
                     GROUP_CONCAT(TT.name SEPARATOR ' ;; ') AS team_names
