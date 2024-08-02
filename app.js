@@ -218,9 +218,8 @@ app.post('/register', async(req, res) => {
         } else if (isNaN(year) || year.length != 4) {
             err = 'Please enter a valid year';
         }
-        
+        gen = gen.trimEnd();
         if (!(gen === 'Male' || gen === 'Female')) {
-            console.log(gen)
             err = 'Please enter a valid gender';
         }
 
