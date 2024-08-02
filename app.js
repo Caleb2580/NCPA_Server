@@ -1098,6 +1098,8 @@ app.get('/api/get-tournaments', async(req, res) => {
             SELECT * FROM Tournament;
         `))[0];
 
+        console.log(current);
+
         let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'teams': teams};
         res.send({'success': true, 'tournaments': tournaments})
 
