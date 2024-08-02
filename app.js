@@ -220,6 +220,7 @@ app.post('/register', async(req, res) => {
         }
         
         if (!(gen === 'Male' || gen === 'Female')) {
+            console.log(gen)
             err = 'Please enter a valid gender';
         }
 
