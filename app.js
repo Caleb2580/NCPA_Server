@@ -2867,7 +2867,7 @@ async function updateCollegeRankings() {
 
 async function enterAllTournamentInfo(tournament_name, info) {
     console.log('Creating Tournament...');
-    let r = await createTournament(tournament_name, null, null);
+    let r = await createTournament(tournament_name, null);
     if (r == true) {
         console.log('Successfully Created Tournament', tournament_name);
     } else {return 'Error Creating Tournament (Tournament Name might already exist)'};
