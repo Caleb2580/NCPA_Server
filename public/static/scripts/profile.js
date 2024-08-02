@@ -3,6 +3,8 @@ players = [];
 let tournaments = {};
 let player_teams = [];
 let currentViewTournament = {};
+let currentD2Player = null;
+let currentD2TeamInfo = {};
 
 
 let months = {
@@ -264,9 +266,18 @@ async function setupGrabs(setup=false) {
     if (info.captain_requests == null) {
         info.captain_requests = [];
     }
+
+    if (info.captain_requests == null) {
+        info.captain_requests = [];
+    }
     for (let i in info.captain_requests) {
-        info.captain_requests[i].requests = info.captain_requests[i].requests.split(',');
-        info.captain_requests[i].request_ids = info.captain_requests[i].request_ids.split(',');
+        if (info.captain_requests[i].requests == null) {
+            info.captain_requests[i].requests = [];
+            info.captain_requests[i].requests_ids = [];
+        } else {
+            info.captain_requests[i].requests = info.captain_requests[i].requests.split(',');
+            info.captain_requests[i].request_ids = info.captain_requests[i].request_ids.split(',');
+        }
     }
 
     if (info.event_types == null) {
@@ -279,7 +290,7 @@ async function setupGrabs(setup=false) {
     for (let i in info.player_teams) {
         // Event players
         if (info.player_teams[i].event_players == null)
-            info.player_teams[i].event_players = [];
+            info.player_teams[i].event_players = {};
         else
             info.player_teams[i].event_players = info.player_teams[i].event_players.split(',');
         let temp_ets = {};
@@ -292,6 +303,27 @@ async function setupGrabs(setup=false) {
         }
         info.player_teams[i].event_players = temp_ets;
         delete temp_ets;
+
+        // Event Teams
+        if (info.player_teams[i].event_teams == null) {
+            info.player_teams[i].event_teams = {};
+        } else {
+            info.player_teams[i].event_teams = info.player_teams[i].event_teams.split(';;')
+        }
+        let temp_teams = {};
+        for (let et in info.event_types) {
+            temp_teams[info.event_types[et]] = [];
+        }
+        for (let et in info.player_teams[i].event_teams) {
+            info.player_teams[i].event_teams[et] = info.player_teams[i].event_teams[et].split(':');
+            temp_teams[info.player_teams[i].event_teams[et][0]].push({
+                event_team_id: info.player_teams[i].event_teams[et][1],
+                p1: await getPlayer(info.player_teams[i].event_teams[et][2]),
+                p2: await getPlayer(info.player_teams[i].event_teams[et][3])
+            })
+        }
+        info.player_teams[i].event_teams = temp_teams;
+        delete temp_teams;
 
         // Team members
         if (info.player_teams[i].team_members == null)
@@ -498,6 +530,15 @@ function selectD() {
                 let location = document.createElement('h2');
                 location.innerText = tournaments[type][i].venue;
                 t.appendChild(location);
+            }
+
+            if (tournaments[type][i].venue_address != null) {
+                let venue_address = document.createElement('h3');
+                venue_address.innerText = tournaments[type][i].venue_address;
+                venue_address.addEventListener('click', event => {
+                    window.open('https://www.google.com/maps/place/' + encodeURIComponent(tournaments[type][i].venue_address))
+                })
+                t.appendChild(venue_address);
             }
             
             if (tournaments[type][i].registration_open != null && tournaments[type][i].registration_close != null) {
@@ -1459,6 +1500,15 @@ function manage(t_name, t_manage, action=null) {
                                     }
                                 }
                             }
+                            for (let et in team.event_teams) {
+                                for (let etm in team.event_teams[et]) {
+                                    if (team.event_teams[et][etm].p1.profile_id == team.team_members[t][0] || team.event_teams[et][etm].p2.profile_id == team.team_members[t][0]) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                            }
+
                             if (found) {
                                 continue;
                             }
@@ -1535,6 +1585,14 @@ function manage(t_name, t_manage, action=null) {
                             unavailable_members.push(parseInt(team.event_players[et][p].profile_id));
                         }
                     }
+
+                    for (let et in team.event_teams) {
+                        for (let etm in team.event_teams[et]) {
+                            unavailable_members.push(parseInt(team.event_teams[et][etm].p1.profile_id));
+                            unavailable_members.push(parseInt(team.event_teams[et][etm].p2.profile_id));
+                        }
+                    }
+                    
 
                     if (males_needed + females_needed > 0) {
                         for (let m in team.team_members) {
@@ -1681,38 +1739,105 @@ function manage(t_name, t_manage, action=null) {
             h1.innerText = et;
             event_div.appendChild(h1);
 
-            let players_div = document.createElement('div');
-            players_div.classList.add('players');
-            
-            if (team.event_players[et].length > 0)
-                event_div.appendChild(players_div)
+            if (et.toLocaleLowerCase().includes('doubles')) {
+                let players_div = document.createElement('div');
+                players_div.classList.add('players');
+                
+                if (team.event_teams[et].length > 0)
+                    event_div.appendChild(players_div)
 
-            for (let p in team.event_players[et]) {
-                let player_button = document.createElement('button');
-                player_button.classList.add('delete');
-                player_button.addEventListener('click', (event) => {
-                    deletePlayerFromEvent(team, et, team.event_players[et][p]);
-                })
-                player_button.innerText = team.event_players[et][p].first_name + ' ' + team.event_players[et][p].last_name;
-                players_div.appendChild(player_button);
-            }
+                for (let t in team.event_teams[et]) {
+                    let player_button = document.createElement('button');
+                    player_button.classList.add('delete');
+                    player_button.addEventListener('click', async(event) => {
+                        document.querySelector('.loading').classList.remove('hide');
+                        let r = await fetch('/api/delete-event-team', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                event_team_id: parseInt(team.event_teams[et][t].event_team_id)
+                            })
+                        }).then(r => r.json());
 
-            if (team.event_players[et].length == 0) {
-                let h2 = document.createElement('h2');
-                h2.innerText = 'No Players'
-                event_div.appendChild(h2);
-            }
+                        if (r.success) {
+                            for (let pt in info.player_teams) {
+                                if (info.player_teams[pt].tournament_team_id == team.tournament_team_id) {
+                                    for (let etm in info.player_teams[pt].event_teams[et]) {
+                                        if (info.player_teams[pt].event_teams[et][etm].event_team_id == team.event_teams[et][t].event_team_id) {
+                                            info.player_teams[pt].event_teams[et].splice(etm, 1);
+                                            addPlayerX();
+                                            manageTournament(currentViewTournament.name, 'd2');
+                                            document.querySelector('.loading').classList.add('hide');
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                            addPlayerX();
+                            manageTournament(currentViewTournament.name, 'd2');
+                        } else {
+                            addPlayerX();
+                            alert(r.error);
+                        }
+                        document.querySelector('.loading').classList.add('hide');
+                    })
+                    player_button.innerText = team.event_teams[et][t].p1.first_name + ' ' + team.event_teams[et][t].p1.last_name + '/' + team.event_teams[et][t].p2.first_name + ' ' + team.event_teams[et][t].p2.last_name;
+                    players_div.appendChild(player_button);
+                }
 
-            let add_player_button = document.createElement('button');
-            add_player_button.classList.add('add-player');
-            add_player_button.innerText = '+';
-            event_div.appendChild(add_player_button);
-            if (et.toLocaleLowerCase().includes('women')) {
-                btns.push([0, add_player_button, et]);
-            } else if (et.toLocaleLowerCase().includes('men')) {
-                btns.push([1, add_player_button, et]);
+                if (team.event_teams[et].length == 0) {
+                    let h2 = document.createElement('h2');
+                    h2.innerText = 'No Teams'
+                    event_div.appendChild(h2);
+                }
+
+                let add_player_button = document.createElement('button');
+                add_player_button.classList.add('add-player');
+                add_player_button.innerText = '+';
+                event_div.appendChild(add_player_button);
+                if (et.toLocaleLowerCase().includes('women')) {
+                    btns.push([0, add_player_button, et]);
+                } else if (et.toLocaleLowerCase().includes('men')) {
+                    btns.push([1, add_player_button, et]);
+                } else {
+                    btns.push([2, add_player_button, et]);
+                }
             } else {
-                btns.push([2, add_player_button, et]);
+                let players_div = document.createElement('div');
+                players_div.classList.add('players');
+                
+                if (team.event_players[et].length > 0)
+                    event_div.appendChild(players_div)
+
+                for (let p in team.event_players[et]) {
+                    let player_button = document.createElement('button');
+                    player_button.classList.add('delete');
+                    player_button.addEventListener('click', (event) => {
+                        deletePlayerFromEvent(team, et, team.event_players[et][p]);
+                    })
+                    player_button.innerText = team.event_players[et][p].first_name + ' ' + team.event_players[et][p].last_name;
+                    players_div.appendChild(player_button);
+                }
+
+                if (team.event_players[et].length == 0) {
+                    let h2 = document.createElement('h2');
+                    h2.innerText = 'No Players'
+                    event_div.appendChild(h2);
+                }
+
+                let add_player_button = document.createElement('button');
+                add_player_button.classList.add('add-player');
+                add_player_button.innerText = '+';
+                event_div.appendChild(add_player_button);
+                if (et.toLocaleLowerCase().includes('women')) {
+                    btns.push([0, add_player_button, et]);
+                } else if (et.toLocaleLowerCase().includes('men')) {
+                    btns.push([1, add_player_button, et]);
+                } else {
+                    btns.push([2, add_player_button, et]);
+                }
             }
 
             d2_div.appendChild(event_div);
@@ -1720,61 +1845,247 @@ function manage(t_name, t_manage, action=null) {
 
         for (let i in btns) {
             let btn = btns[i][1];
-            btn.addEventListener('click', event => {
-                document.querySelector('.loading').classList.remove('hide');
-                document.querySelector('.alert-screen').classList.add('show');
-                document.querySelector('.alert-screen .add-player').classList.add('show');
+            if (btns[i][2].toLocaleLowerCase().includes('doubles')) {
+                btn.addEventListener('click', event => {
+                    document.querySelector('.loading').classList.remove('hide');
+                    document.querySelector('.alert-screen').classList.add('show');
+                    document.querySelector('.alert-screen .add-player').classList.add('show');
 
-                let players_div = document.querySelector('.alert-screen .add-player .players');
-                players_div.innerHTML = '';
-                let p_counter = 0;
+                    let players_div = document.querySelector('.alert-screen .add-player .players');
+                    players_div.innerHTML = '';
 
-                for (let t in team.team_members) {
-                    if (team.team_members[t][1] != 1) {
-                        continue;
+                    let h1_t = document.createElement('h1');
+                    h1_t.style.marginBottom = '.5em';
+                    if (btns[i][2].toLocaleLowerCase().includes('women')) {
+                        h1_t.innerText = 'Female #1';
+                    } else {
+                        h1_t.innerText = 'Male #1';
                     }
-                    let found = false;
-                    for (let st in team.sub_teams) {
-                        for (let stm in team.sub_teams[st].members) {
-                            if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                    players_div.appendChild(h1_t);
+
+                    let p_counter = 0;
+
+                    for (let t in team.team_members) {
+                        if (team.team_members[t][1] != 1) {
+                            continue;
+                        }
+                        let found = false;
+                        for (let st in team.sub_teams) {
+                            for (let stm in team.sub_teams[st].members) {
+                                if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        for (let p in team.event_players[btns[i][2]]) {
+                            if (team.event_players[btns[i][2]][p].profile_id == team.team_members[t][0]) {
                                 found = true;
                                 break;
                             }
                         }
-                    }
-                    for (let p in team.event_players[btns[i][2]]) {
-                        if (team.event_players[btns[i][2]][p].profile_id == team.team_members[t][0]) {
-                            found = true;
-                            break;
+
+                        for (let etm in team.event_teams[btns[i][2]]) {
+                            if (team.event_teams[btns[i][2]][etm].p1.profile_id == team.team_members[t][0] || team.event_teams[btns[i][2]][etm].p2.profile_id == team.team_members[t][0]) {
+                                found = true;
+                                break;
+                            }
                         }
-                    }
-                    if (found) {
-                        continue;
-                    }
-                    let pl = getPlayer(team.team_members[t][0]);
-                    if ((btns[i][0] == 1 && pl.gender != 'Male') || (btns[i][0] == 0 && pl.gender != 'Female')) {
-                        continue;
+                        if (found) {
+                            continue;
+                        }
+                        let pl = getPlayer(team.team_members[t][0]);
+                        if (btns[i][2].toLocaleLowerCase().includes('women')) {
+                            if (pl.gender != 'Female') {
+                                continue;
+                            }
+                        } else if (pl.gender == 'Female') {
+                            continue;
+                        }
+
+                        let p = document.createElement('button');
+                        p.classList.add('player');
+                        p.innerText = pl.first_name + ' ' + pl.last_name;
+                        p.addEventListener('click', async(event) => {
+                            currentD2Player = pl;
+                            currentD2TeamInfo = {
+                                et: btns[i][2],
+                                team: team
+                            }
+                            players_div.innerHTML = '';
+
+                            let h1_t = document.createElement('h1');
+                            h1_t.style.marginBottom = '.5em';
+                            if (btns[i][2].toLocaleLowerCase().includes('women') || btns[i][2].toLocaleLowerCase().includes('mixed')) {
+                                h1_t.innerText = 'Female #2';
+                            } else {
+                                h1_t.innerText = 'Male #2';
+                            }
+                            players_div.appendChild(h1_t);
+
+                            let p_counter = 0;
+
+                            for (let t in team.team_members) {
+                                if (team.team_members[t][1] != 1) {
+                                    continue;
+                                }
+                                let found = false;
+                                for (let st in team.sub_teams) {
+                                    for (let stm in team.sub_teams[st].members) {
+                                        if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                for (let p in team.event_players[btns[i][2]]) {
+                                    if (team.event_players[btns[i][2]][p].profile_id == team.team_members[t][0]) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                for (let etm in team.event_teams[btns[i][2]]) {
+                                    if (team.event_teams[btns[i][2]][etm].p1.profile_id == team.team_members[t][0] || team.event_teams[btns[i][2]][etm].p2.profile_id == team.team_members[t][0]) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (currentD2Player.profile_id == team.team_members[t][0]) {
+                                    found = true;
+                                }
+                                if (found) {
+                                    continue;
+                                }
+                                let pl = getPlayer(team.team_members[t][0]);
+                                if (btns[i][2].toLocaleLowerCase().includes('women') || btns[i][2].toLocaleLowerCase().includes('mixed')) {
+                                    if (pl.gender != 'Female') {
+                                        continue;
+                                    }
+                                } else if (pl.gender == 'Female') {
+                                    continue;
+                                }
+
+                                let p = document.createElement('button');
+                                p.classList.add('player');
+                                p.innerText = pl.first_name + ' ' + pl.last_name;
+                                p.addEventListener('click', async(event) => {
+                                    document.querySelector('.loading').classList.remove('hide');
+                                    let r = await fetch('/api/add-event-team', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            et: currentD2TeamInfo.et,
+                                            team_id: team.tournament_team_id,
+                                            tournament: team.tournament,
+                                            p1: currentD2Player.profile_id,
+                                            p2: pl.profile_id
+                                        })
+                                    }).then(r => r.json());
+
+                                    if (r.success) {
+                                        for (let pt in info.player_teams) {
+                                            if (info.player_teams[pt].tournament_team_id == team.tournament_team_id) {
+                                                info.player_teams[pt].event_teams[currentD2TeamInfo.et].push({
+                                                    event_team_id: r.id,
+                                                    p1: currentD2Player,
+                                                    p2: pl
+                                                })
+                                                break;
+                                            }
+                                        }
+                                        addPlayerX();
+                                        manageTournament(currentViewTournament.name, 'd2');
+                                    } else {
+                                        addPlayerX();
+                                        alert(r.error);
+                                    }
+                                    document.querySelector('.loading').classList.add('hide');
+                                })
+
+                                players_div.appendChild(p);
+                                p_counter += 1;
+                            }
+
+                            if (p_counter == 0) {
+                                let no_p = document.createElement('h1');
+                                no_p.innerText = 'No players to add';
+                                players_div.appendChild(no_p);
+                            }
+                            
+                            document.querySelector('.loading').classList.add('hide');
+                        })
+
+                        players_div.appendChild(p);
+                        p_counter += 1;
                     }
 
-                    let p = document.createElement('button');
-                    p.classList.add('player');
-                    p.innerText = pl.first_name + ' ' + pl.last_name;
-                    p.addEventListener('click', async(event) => {
-                        addPlayerToEvent(team, btns[i][2], pl);
-                    })
-
-                    players_div.appendChild(p);
-                    p_counter += 1;
-                }
-
-                if (p_counter == 0) {
-                    let no_p = document.createElement('h1');
-                    no_p.innerText = 'No players to add';
-                    players_div.appendChild(no_p);
-                }
-                
-                document.querySelector('.loading').classList.add('hide');
-            });
+                    if (p_counter == 0) {
+                        let no_p = document.createElement('h1');
+                        no_p.innerText = 'No players to add';
+                        players_div.appendChild(no_p);
+                    }
+                    
+                    document.querySelector('.loading').classList.add('hide');
+                });
+            } else {
+                btn.addEventListener('click', event => {
+                    document.querySelector('.loading').classList.remove('hide');
+                    document.querySelector('.alert-screen').classList.add('show');
+                    document.querySelector('.alert-screen .add-player').classList.add('show');
+    
+                    let players_div = document.querySelector('.alert-screen .add-player .players');
+                    players_div.innerHTML = '';
+                    let p_counter = 0;
+    
+                    for (let t in team.team_members) {
+                        if (team.team_members[t][1] != 1) {
+                            continue;
+                        }
+                        let found = false;
+                        for (let st in team.sub_teams) {
+                            for (let stm in team.sub_teams[st].members) {
+                                if (team.sub_teams[st].members[stm].profile_id == team.team_members[t][0]) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        for (let p in team.event_players[btns[i][2]]) {
+                            if (team.event_players[btns[i][2]][p].profile_id == team.team_members[t][0]) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) {
+                            continue;
+                        }
+                        let pl = getPlayer(team.team_members[t][0]);
+                        if ((btns[i][0] == 1 && pl.gender != 'Male') || (btns[i][0] == 0 && pl.gender != 'Female')) {
+                            continue;
+                        }
+    
+                        let p = document.createElement('button');
+                        p.classList.add('player');
+                        p.innerText = pl.first_name + ' ' + pl.last_name;
+                        p.addEventListener('click', async(event) => {
+                            addPlayerToEvent(team, btns[i][2], pl);
+                        })
+    
+                        players_div.appendChild(p);
+                        p_counter += 1;
+                    }
+    
+                    if (p_counter == 0) {
+                        let no_p = document.createElement('h1');
+                        no_p.innerText = 'No players to add';
+                        players_div.appendChild(no_p);
+                    }
+                    
+                    document.querySelector('.loading').classList.add('hide');
+                });
+            }
         };
 
     });
@@ -2156,6 +2467,50 @@ async function select(p) {
             div.appendChild(options);
             page.appendChild(div);
         }
+
+        if (info.player.singles_games_played + info.player.doubles_games_played + info.player.mixed_doubles_games_played == 0) {
+            let div = document.createElement('div');
+            div.classList.add('editable');
+
+            let title = document.createElement('h1');
+            title.innerText = 'Connect Key'
+
+            let input = document.createElement('input');
+            input.classList.add('connect')
+
+            div.appendChild(title);
+            div.appendChild(input);
+
+            let options = document.createElement('div');
+            let save = document.createElement('button');
+            save.classList.add('connect')
+            save.addEventListener('click', async(event) => {
+                let connect_key = document.querySelector('input.connect').value;
+                let r = await fetch('/connect-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        connect_key: connect_key
+                    })
+                }).then(r => r.json());
+
+                if (r.success) {
+                    alert('Connected');
+                    location.reload();
+                } else {
+                    alert(r.error)
+                }
+            })
+            save.innerText = 'Connect';
+
+            options.appendChild(save);
+            div.appendChild(options);
+            
+            page.appendChild(div);
+        }
+
     } else if (p === 'Tournaments') {
 
         let list = document.createElement('div');
@@ -2172,9 +2527,15 @@ async function select(p) {
         dd.classList.add('date-div');
 
         date_cats = ['Current', 'Upcoming', 'Past'];
+        counts = []
         for (i in date_cats) {
             let d = document.createElement('div');
-            if (date_cats[i] == 'Current') {
+            counts[i] = tournaments[date_cats[i].toLocaleLowerCase()].length;
+            if (i == 0 && counts[i] > 0) {
+                d.classList.add('selected');
+            } else if(i == 1 && counts[0] == 0 && counts[1] > 0) {
+                d.classList.add('selected');
+            } else if(i == 2 && counts[0] == 0 && counts[1] == 0) {
                 d.classList.add('selected');
             }
             h1 = document.createElement('h1');

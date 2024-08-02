@@ -249,18 +249,6 @@
             <h4>Tournament Name</h5>
             <input class="name" type="text">
         </div>
-        <div class="container date">
-            <h4>Date(MM-DD-YYYY)</h5>
-            <input class="month" type="text" placeholder="MM" maxlength="2">
-            <h5>-</h5>
-            <input class="day" type="text" placeholder="DD" maxlength="2">
-            <h5>-</h5>
-            <input class="year" type="text" placeholder="YYYY" maxlength="4">
-        </div>
-        <div class="container">
-            <h4>Location</h5>
-            <input class="location" type="text">
-        </div>
         <div class="container file">
             <h4>Info File</h5>
             <div class="file-input-wrapper">
@@ -276,28 +264,8 @@
     <script>
         async function upload() {
             let name = document.querySelector('input.name').value;
-            let month = document.querySelector('input.month').value;
-            let day = document.querySelector('input.day').value;
-            let year = document.querySelector('input.year').value;
-            let location = document.querySelector('input.location').value;
             let file = document.querySelector('input.file');
 
-            // if (name.length === 0) {
-            //     alert('Please enter a tournament name');
-            //     return;
-            // }
-            // if (isNaN(month) || month.length !== 2 || parseInt(month) < 1 || parseInt(month) > 12) {
-            //     alert('Please enter a valid month (MM)');
-            //     return;
-            // }
-            // if (isNaN(day) || day.length !== 2 || parseInt(day) < 1 || parseInt(day) > 31) {
-            //     alert('Please enter a valid day (DD)');
-            //     return;
-            // }
-            // if (isNaN(year) || year.length !== 4 || parseInt(year) < 1900 || parseInt(year) > 2200) {
-            //     alert('Please enter a valid year (YYYY)');
-            //     return;
-            // }
             if (file.files.length == 0) {
                 alert('Please attach an info file');
             }
@@ -307,8 +275,6 @@
 
             let formData = new FormData();
             formData.append('name', name);
-            formData.append('date', `${year}-${month}-${day}`);
-            formData.append('location', location);
             formData.append('file', file.files[0]);
 
             document.querySelector('div.loading').classList.remove('hide');

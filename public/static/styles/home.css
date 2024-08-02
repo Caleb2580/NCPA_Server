@@ -235,6 +235,7 @@ div.player-image {
     transition: ease-in-out .2s;
     border-radius: .75em;
     cursor: pointer;
+    box-shadow: 0 0 10px rgba(126, 173, 237, .5);
 }
 
 .main button:hover {

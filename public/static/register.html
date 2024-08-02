@@ -99,8 +99,14 @@
                 <div class="inner">
                     <h3>CONNECT KEY</h3>
                     <input type="text" id="connect_key">
+                    <h4>If you played in a previous tournament, please check your email for a connect key so that you can connect your account</h4>
                 </div>
-    
+
+                <div class="inner" style="flex-direction: row;">
+                    <button class="check" onclick="checkBox(event)"></button>
+                    <h4>I agree to the <span onclick="window.open('/terms-of-service.pdf')">Terms of Service</span></h4>
+                </div>
+
                 <div style="width: 100%;" class="inner">
                     <button class="register-btn" onclick="register()">Register</button>
                 </div>
@@ -113,6 +119,14 @@
 
     <script>
 
+        function checkBox(event) {
+            if (event.target.classList.contains('selected')) {
+                event.target.classList.remove('selected');
+            } else {
+                event.target.classList.add('selected');
+            }
+        }
+
         function extractNums(str) {
             new_str = '';
             for (i in str) {
@@ -124,6 +138,10 @@
         }
 
         function register() {
+            let check = document.querySelector('button.check');
+            if (!check.classList.contains('selected')) {
+                return alert('You must agree to the terms of service.')
+            }
             let fname = document.querySelector('#fname').value;
             let lname = document.querySelector('#lname').value;
             let email = document.querySelector('#email').value;

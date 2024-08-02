@@ -16,7 +16,7 @@
             <div class="stuff">
                 <div class="items">
                     <button onclick="menuSelect(event)">Tournaments</button>
-                    <button class="selected" onclick="menuSelect(event)">Profiles</button>
+                    <button onclick="menuSelect(event)">Profiles</button>
                     <button onclick="menuSelect(event)">Reset Database</button>
                     <button onclick="location.href = '/'">Home</button>
                 </div>
@@ -1351,11 +1351,29 @@
         }
     }
 
-    async function setup() {
-        document.querySelector('.menu .items button.selected').dispatchEvent(new Event('click'))
+    async function setup(setup=false) {
+        const urlParams = new URLSearchParams(window.location.search);
+        let p_ = urlParams.get('view');
+
+        if (setup) {
+            if (p_ == null) {
+                p_ = 'Tournaments'
+            }
+        }
+
+        if (p_ != null) {
+            let menu_items = document.querySelectorAll('.menu .items button');
+            for (let i in menu_items) {
+                if (menu_items[i].innerText == p_) {
+                    console.log(p_)
+                    menu_items[i].dispatchEvent(new Event('click'));
+                    return;
+                }
+            }
+        }
     }
 
-    setup();
+    setup(true);
 
     function menuSelect(event) {
         let page = event.target.innerHTML;
@@ -1374,6 +1392,11 @@
         }
 
         event.target.classList.add('selected');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('view', event.target.innerText);
+        const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
     }
 </script>
 </html>

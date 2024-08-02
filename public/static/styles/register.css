@@ -118,6 +118,36 @@ h3 {
     text-align: center;
 }
 
+h4 {
+    margin: 0;
+    padding: 0;
+    font-size: .6em;
+    color: rgb(122, 122, 122);
+    font-weight: 400;
+    width: auto;
+    text-align: center;
+}
+
+h4 span {
+    text-decoration: underline;
+    color: rgb(126, 173, 237);
+    cursor: pointer;
+}
+
+.inner button.check {
+    background-color: rgb(250, 250, 250);
+    border: 2px solid rgb(126, 173, 237);
+    width: 1em;
+    height: 1em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.inner button.check.selected {
+
+    background-color: rgb(126, 173, 237);
+}
+
 .inner div.date h3 {
     width: 2em;
 }

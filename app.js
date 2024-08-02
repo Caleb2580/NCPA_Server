@@ -86,6 +86,7 @@ function authenticate(req, res, next) {
         }
 
         jwt.verify(token, JWT_SECRET, async(err, user) => {
+            console.log(user)
             let permission = await getPermission(user.profile_id);
             if (err || permission != 5) {
                 if (req.method === 'GET') {
@@ -104,6 +105,8 @@ function authenticate(req, res, next) {
         }
     }
 }
+
+// updateCollegeRankings();
 
 let base_url = 'http://localhost:3000';
 
@@ -287,12 +290,12 @@ app.get('/me', async(req, res) => {
                             FROM MatchTeamPlayer mtp
                             WHERE mtp.team_id = m.t2_id) as profile_ids_t2
                     FROM \`Match\` m
-                    WHERE EXISTS (SELECT 1 
+                    WHERE EXISTS (SELECT 1
                                 FROM MatchTeamPlayer mtp 
                                 WHERE (mtp.team_id = m.t1_id OR mtp.team_id = m.t2_id) 
                                 AND mtp.profile_id = ${player.profile_id})
                     ORDER BY m.time DESC
-                    ${('more_matches' in req.query && req.query.more_matches == 'true') ? '' : 'LIMIT 3'};
+                    ${('more_matches' in req.query && req.query.more_matches == 'true') ? '' : 'LIMIT 6'};
                 `))[0];
                 const player_tournaments = (await pool.query(`
                     SELECT
@@ -339,7 +342,8 @@ app.get('/me', async(req, res) => {
                         GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) ORDER BY TTM.profile_id SEPARATOR ',') AS team_members,
                         GROUP_CONCAT(DISTINCT CONCAT(ST.sub_id, ':', ST.ind) ORDER BY ST.ind) AS sub_teams,
                         GROUP_CONCAT(DISTINCT CONCAT(STM.sub_id, ':', STM.profile_id) ORDER BY STM.sub_id) AS sub_team_members,
-                        GROUP_CONCAT(DISTINCT CONCAT(TEP.event, ':', TEP.profile_id) ORDER BY TEP.event) AS event_players
+                        GROUP_CONCAT(DISTINCT CONCAT(TEP.event, ':', TEP.profile_id) ORDER BY TEP.event) AS event_players,
+                        GROUP_CONCAT(DISTINCT CONCAT(TET.event, ':', TET.event_team_id, ':', TET.p1, ':', TET.p2) ORDER BY TET.event SEPARATOR ';;') AS event_teams
                     FROM 
                         TournamentTeam TT
                     JOIN 
@@ -350,6 +354,8 @@ app.get('/me', async(req, res) => {
                         TournamentSubTeamMember STM ON STM.sub_id = ST.sub_id
                     LEFT JOIN
                         TournamentEventPlayer TEP ON TEP.tournament_team_id = TT.tournament_team_id
+                    LEFT JOIN
+                        TournamentEventTeam TET ON TET.tournament_team_id = TT.tournament_team_id
                     WHERE
                         TT.tournament_team_id IN (
                             SELECT DISTINCT TTM2.tournament_team_id 
@@ -368,7 +374,7 @@ app.get('/me', async(req, res) => {
                         tournament_team,
                         tournament,
                         profile_id
-                    FROM TournamentTeamRequest
+                    FROM TournamentTeamRequest WHERE profile_id=${pool.escape(user.profile_id)};
                 `))[0];
                 const captain_requests = (await pool.query(`
                     SELECT
@@ -377,7 +383,9 @@ app.get('/me', async(req, res) => {
                         GROUP_CONCAT(TTR.profile_id) AS requests,
                         GROUP_CONCAT(TTR.request_id) AS request_ids
                     FROM TournamentTeam TT
-                    JOIN TournamentTeamRequest TTR ON TTR.tournament_team=TT.name AND TTR.tournament=TT.tournament
+                    JOIN TournamentTeamMember TTM ON TT.tournament_team_id=TTM.tournament_team_id
+                    LEFT JOIN TournamentTeamRequest TTR ON TTR.tournament_team=TT.name AND TTR.tournament=TT.tournament
+                    WHERE TTM.profile_id=${pool.escape(user.profile_id)} AND TTM.captain=1
                     GROUP BY TT.name, TT.tournament
                 `))[0];
 
@@ -402,6 +410,61 @@ app.get('/me', async(req, res) => {
         return res.send({'success': false, 'error': 'Something went wrong'});
     }
 });
+
+app.get('/terms-of-service.pdf', async(req, res) => {
+    return res.sendFile(path.join(__dirname, 'public', 'static', 'ncpa login agreement.pdf'));
+})
+
+app.post('/connect-account', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
+            
+        if (user === null)
+            return res.send({'success': false, 'error': 'login'});
+
+        if (req.body.connect_key.length < 10) {
+            return res.send({'success': false, 'error': 'Please enter a valid connect key'});
+        }
+
+        let current_player = (await pool.query(`SELECT profile_id FROM Profile WHERE profile_id=${user.profile_id}`))[0][0];
+        let connect_player = (await pool.query(`SELECT * FROM Profile WHERE connect_key=${pool.escape(req.body.connect_key)}`))[0][0];
+
+        if (connect_player.pass != null) {
+            return res.send({'success': false, 'error': 'Sorry, this profile has already been connected'})
+        }
+
+        if (current_player.singles_games_played + current_player.doubles_games_played + current_player.mixed_doubles_games_played > 0) {
+            return res.send({'success': false, 'error': 'This player cannot be connected.'})
+        }
+
+        let r = (await pool.query(`
+            UPDATE TournamentSubTeamMember SET profile_id=${current_player.profile_id} WHERE profile_id=${connect_player.profile_id};
+            UPDATE TournamentEventPlayer SET profile_id=${current_player.profile_id} WHERE profile_id=${connect_player.profile_id};
+            UPDATE MatchTeamPlayer SET profile_id=${current_player.profile_id} WHERE profile_id=${connect_player.profile_id};
+            UPDATE TournamentTeamMember SET profile_id=${current_player.profile_id} WHERE profile_id=${connect_player.profile_id};
+
+            UPDATE Profile SET
+                college=${pool.escape(connect_player.college)},
+                division=${pool.escape(connect_player.division)},
+                wins=${pool.escape(connect_player.wins)},
+                losses=${pool.escape(connect_player.losses)},
+                singles_rating=${pool.escape(connect_player.singles_rating)},
+                doubles_rating=${pool.escape(connect_player.doubles_rating)},
+                mixed_doubles_rating=${pool.escape(connect_player.mixed_doubles_rating)},
+                singles_games_played=${pool.escape(connect_player.singles_games_played)},
+                doubles_games_played=${pool.escape(connect_player.doubles_games_played)},
+                mixed_doubles_games_played=${pool.escape(connect_player.mixed_doubles_games_played)}
+            WHERE profile_id=${current_player.profile_id};
+
+            DELETE FROM Profile WHERE profile_id=${connect_player.profile_id};
+        `));
+        
+        return res.send({'success': true})
+    } catch (error) {
+        console.log(error);
+        return res.send({'success': false, 'error': 'Something went wrong'})
+    }
+})
 
 async function refund(stripe_session_id, metadata) {
     try {
@@ -674,7 +737,7 @@ app.get('/admin/merge-players', authenticate, async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'merge-players.html'))
 })
 
-app.get('/admin/upload-tournament', async(req, res) => {
+app.get('/admin/upload-tournament', authenticate, async(req, res) => {
     return res.sendFile(path.join(__dirname, 'admin', 'upload-tournament.html'))
 })
 
@@ -765,11 +828,13 @@ app.post('/admin/edit-profile', authenticate, async(req, res) => {
             } else {
                 s += pool.escape(profile_info[key]);
             }
-            query += s + ' AND ';
+            query += s + ', ';
         }
 
+        // query = query.substring(0, query.length-2);
+
         if (query.length > 5) {
-            query = query.substring(0, query.length-5);
+            query = query.substring(0, query.length-2);
         }
 
         query += ` WHERE profile_id=${pool.escape(pid)};`
@@ -782,6 +847,7 @@ app.post('/admin/edit-profile', authenticate, async(req, res) => {
             return res.send({'success': true})
         }
     } catch (error) {
+        console.log(error)
         return res.send({'success': false, 'error': 'Something went wrong'});
     }
 });
@@ -882,7 +948,7 @@ app.post('/api/merge', authenticate, async(req, res) => {
     }
 })
 
-app.post('/api/upload-tournament', upload.single('file'), async (req, res) => {
+app.post('/api/upload-tournament', authenticate, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.send({'success': false, 'error': 'No file uploaded'});
@@ -890,11 +956,11 @@ app.post('/api/upload-tournament', upload.single('file'), async (req, res) => {
 
         const info = await fs.readJson(req.file.path);
 
-        if (req.body.name.length == 0 || req.body.date.length != 10) {
+        if (req.body.name.length == 0) {
             return res.send({'success': false})
         }
 
-        const r = await enterAllTournamentInfo(req.body.name, req.body.venue, req.body.multiplier, info);
+        const r = await enterAllTournamentInfo(req.body.name, info);
         
         fs.unlink(req.file.path, (err) => {
             if (err) {
@@ -957,7 +1023,7 @@ app.get('/api/logged-in', async(req, res) => {
 
 app.get('/api/get-tournaments', async(req, res) => {
     try {
-        let to_grab = 'name, venue, venue address, registration_open, registration_close, begin_date, end_date, description';
+        let to_grab = 'name, venue, venue_address, registration_open, registration_close, begin_date, end_date, description';
 
         let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
 
@@ -1133,7 +1199,6 @@ app.post('/api/send-team-request', async(req, res) => {
     try {
 
         let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
-        console.log(req.body)
         if (user === null || !('profile_id' in user)) {
             return res.send({'success': false, 'error': 'authentication failed'})
         }
@@ -1497,6 +1562,100 @@ app.post('/api/delete-player-from-event', async(req, res) => {
     }
 })
 
+app.post('/api/add-event-team', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
+        
+        if (user === null) {
+            return res.send({'success': false, 'error': 'Please log in'});
+        }
+
+        // Verify captain
+        let tm = (await pool.query(`
+            SELECT TT.tournament, TT.name FROM TournamentTeam TT
+            JOIN TournamentTeamMember TTM ON TTM.tournament_team_id=TT.tournament_team_id
+            WHERE TTM.profile_id=${user.profile_id} AND TTM.captain=1 AND TT.tournament_team_id=${pool.escape(req.body.team_id)} AND TT.tournament=${pool.escape(req.body.tournament)}
+        `))[0];
+
+        if (tm.length === 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+
+        let p1 = (await pool.query(`SELECT gender FROM Profile WHERE profile_id=${pool.escape(req.body.p1)}`))[0][0];
+        let p2 = (await pool.query(`SELECT gender FROM Profile WHERE profile_id=${pool.escape(req.body.p2)}`))[0][0];
+
+        if (p1.gender == p2.gender) {
+            if (req.body.et.toLocaleLowerCase().includes('women')) {
+                if (p1.gender != 'Female') {
+                    return res.send({'success': false, 'error': 'Something went wrong'})
+                }
+            } else {
+                if (p1.gender != 'Male') {
+                    return res.send({'success': false, 'error': 'Something went wrong'})
+                }
+            }
+        } else {
+            if (!req.body.et.toLocaleLowerCase().includes('mixed')) {
+                return res.send({'success': false, 'error': 'Something went wrong'})
+            }
+        }
+
+        let exists = (await pool.query(`SELECT p1 FROM TournamentEventTeam WHERE (p1=${pool.escape(req.body.p1)} OR p1=${pool.escape(req.body.p2)} OR p2=${pool.escape(req.body.p1)} OR p2=${pool.escape(req.body.p2)}) AND event=${pool.escape(req.body.et)} AND tournament_team_id=${req.body.team_id}`))[0];
+
+        if (exists > 0) {
+            return res.send({'success': false, 'error': 'Player is already registered for an event'});
+        }
+
+        r = (await pool.query(`INSERT INTO TournamentEventTeam(tournament, tournament_team_id, event, p1, p2) VALUES(${pool.escape(req.body.tournament)}, ${pool.escape(req.body.team_id)}, ${pool.escape(req.body.et)}, ${pool.escape(req.body.p1)}, ${pool.escape(req.body.p2)});`))[0];
+        if (r.affectedRows == 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'})
+        } else {
+            return res.send({'success': true, id: r.insertId});
+        }
+
+
+    } catch (error) {
+        if (error.code == 'ER_DUP_ENTRY') {
+            return res.send({'success': false, 'error': 'Player is already registered for an event'})
+        }
+        res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
+app.post('/api/delete-event-team', async(req, res) => {
+    try {
+        let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
+        
+        if (user === null) {
+            return res.send({'success': false, 'error': 'Please log in'});
+        }
+
+        // Verify captain
+        let tm = (await pool.query(`
+            SELECT * FROM TournamentEventTeam TET
+            JOIN TournamentTeamMember TTM ON TET.tournament_team_id=TTM.tournament_team_id
+            WHERE TTM.profile_id=${user.profile_id} AND TTM.captain=1
+        `))[0];
+
+        if (tm.length === 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+        
+        let r = (await pool.query(`DELETE FROM TournamentEventTeam WHERE event_team_id=${pool.escape(req.body.event_team_id)}`))[0];
+
+        if (r.affectedRows === 0) {
+            return res.send({'success': false, 'error': "We can't find that event team"});
+        } else {
+            // await pool.query(`CALL ReindexSubTeams("${tm[0].name}", "${tm[0].tournament}");`)
+            return res.send({'success': true})
+        }
+
+
+    } catch (error) {
+        console.log(error)
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+});
 
 
 app.listen(port, () => {
@@ -2001,8 +2160,8 @@ async function wipeDatabase() {
 
         await createTeamTypes();
         
-        const JWT_SECRET = generateConnectKey(40);
-        process.env.JWT_SECRET = JWT_SECRET;
+        // const JWT_SECRET = generateConnectKey(40);
+        // process.env.JWT_SECRET = JWT_SECRET;
         
         return true;
     } catch (error) {
@@ -2690,9 +2849,9 @@ async function updateCollegeRankings() {
     }
 }
 
-async function enterAllTournamentInfo(tournament_name, venue, multiplier, info) {
+async function enterAllTournamentInfo(tournament_name, info) {
     console.log('Creating Tournament...');
-    let r = await createTournament(tournament_name, venue, multiplier);
+    let r = await createTournament(tournament_name, null, null);
     if (r == true) {
         console.log('Successfully Created Tournament', tournament_name);
     } else {return 'Error Creating Tournament (Tournament Name might already exist)'};

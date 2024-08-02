@@ -6,11 +6,26 @@ let allMatches = [];
 let college = null;
 let colleges = [];
 let allColleges = [];
-attrs = ['team_type', 't1_names', 't2_names', 't1score', 't2score']
-titles = ['Type', 'Team', 'Opponent', 'Score', 'Opponent Score']; // 'Gender'
-to_show = ['team_type', 't1_names', 't2_names', 't1score', 't2score'];
-az = ['team_type', 't1_names', 't2_names'];
+attrs = ['time', 'team_type', 't1_names', 't2_names', 't1score', 't2score']
+titles = ['Time', 'Type', 'Team', 'Opponent', 'Score', 'Opponent Score']; // 'Gender'
+to_show = ['time', 'team_type', 't1_names', 't2_names', 't1score', 't2score'];
+az = ['team_type', 't1_names', 't2_names', 'time'];
 last_search = null;
+
+let months = {
+    '01': 'Jan',
+    '02': 'Feb',
+    '03': 'Mar',
+    '04': 'Apr',
+    '05': 'May',
+    '06': 'Jun',
+    '07': 'Jul',
+    '08': 'Aug',
+    '09': 'Sep',
+    '10': 'Oct',
+    '11': 'Nov',
+    '12': 'Dec'
+};
 
 let searchCollege = null;
 
@@ -228,6 +243,7 @@ async function getMatches() {
             t2_names.push(t2[t2.length-1].first_name + ' ' + t2[t2.length-1].last_name)
         }
 
+
         if (me[i].profile_ids_t1.includes(my_id.toString())) {
             me[i].t1 = t1;
             me[i].t2 = t2;
@@ -242,6 +258,32 @@ async function getMatches() {
             me[i].t1score = me[i].t2score;
             me[i].t2score = t1score;
         }
+
+        let date = new Date(me[i].time);
+
+        // Extract the day, month, year, hour, and minute
+        const day = date.getUTCDate();
+        let month = date.getUTCMonth() + 1; // Months are zero-indexed in JavaScript
+        const year = date.getUTCFullYear();
+        let hour = parseInt(date.getUTCHours());
+        let minute = date.getUTCMinutes().toString();
+
+        month = month.toString();
+        if (month.length == 1) {
+            month = '0' + month;
+        }
+
+        let am = 'AM';
+        if (hour > 12) {
+            hour -= 12;
+            am = 'PM';
+        }
+        
+        if (minute.length == 1) {
+            minute = '0' + minute;
+        }
+
+        me[i].time = `${hour}:${minute}${am} ${months[month]} ${day}, ${year}`;
     }
     return me;
 }
@@ -323,100 +365,100 @@ async function setup(startup=true, back=false) {
             
             tr.appendChild(td);
         }
-        tr.addEventListener('click', (event) => {
-            showPlayer(event)
-        })
+        // tr.addEventListener('click', (event) => {
+        //     showPlayer(event)
+        // })
         table.appendChild(tr);
     }
 
 }
 
-async function showPlayer(event) {
-    let pp = document.querySelector('.player-profile');
-    let trs = document.querySelectorAll('.player-table tr')
-    trs.forEach((tr, i) => {
-        if (tr == event.target.parentElement) {
-            let top = document.querySelector('.player-container .top');
-            top.innerHTML = '';
-            let middle = document.querySelector('.player-container .middle');
-            middle.innerHTML = '';
-            let bottom = document.querySelector('.player-container .bottom');
-            bottom.innerHTML = '';
+// async function showPlayer(event) {
+//     let pp = document.querySelector('.player-profile');
+//     let trs = document.querySelectorAll('.player-table tr')
+//     trs.forEach((tr, i) => {
+//         if (tr == event.target.parentElement) {
+//             let top = document.querySelector('.player-container .top');
+//             top.innerHTML = '';
+//             let middle = document.querySelector('.player-container .middle');
+//             middle.innerHTML = '';
+//             let bottom = document.querySelector('.player-container .bottom');
+//             bottom.innerHTML = '';
 
-            let player_name = document.createElement('h1');
-            player_name.innerText = players[i-1].first_name + ' ' + players[i-1].last_name;
-            top.appendChild(player_name);
+//             let player_name = document.createElement('h1');
+//             player_name.innerText = players[i-1].first_name + ' ' + players[i-1].last_name;
+//             top.appendChild(player_name);
 
-            let player_college = document.createElement('h2');
-            player_college.style.cursor = 'alias';
-            player_college.style.textDecoration = 'underline';
-            player_college.innerText = players[i-1].college.trimEnd();
-            player_college.addEventListener('click', async(event) => {
-                event.stopPropagation();
-                window.open(`/players?college=${encodeURIComponent(players[i-1].college.trimEnd())}`);
-            });
-            top.appendChild(player_college);
+//             let player_college = document.createElement('h2');
+//             player_college.style.cursor = 'alias';
+//             player_college.style.textDecoration = 'underline';
+//             player_college.innerText = players[i-1].college.trimEnd();
+//             player_college.addEventListener('click', async(event) => {
+//                 event.stopPropagation();
+//                 window.open(`/players?college=${encodeURIComponent(players[i-1].college.trimEnd())}`);
+//             });
+//             top.appendChild(player_college);
 
-            if (players[i-1].division < 3 || players[i-1].gender != 'N/A') {
-                let player_classification = document.createElement('h2');
-                if (players[i-1].division < 3) {
-                    if (players[i-1].gender != 'N/A') {
-                        player_classification.innerText = 'D' + players[i-1].division + ' ' + players[i-1].gender;
-                    } else {
-                        player_classification.innerText = 'D' + players[i-1].division;
-                    }
-                } else {
-                    player_classification.innerText = players[i-1].gender;
-                }
+//             if (players[i-1].division < 3 || players[i-1].gender != 'N/A') {
+//                 let player_classification = document.createElement('h2');
+//                 if (players[i-1].division < 3) {
+//                     if (players[i-1].gender != 'N/A') {
+//                         player_classification.innerText = 'D' + players[i-1].division + ' ' + players[i-1].gender;
+//                     } else {
+//                         player_classification.innerText = 'D' + players[i-1].division;
+//                     }
+//                 } else {
+//                     player_classification.innerText = players[i-1].gender;
+//                 }
                 
-                top.appendChild(player_classification);
-            }
+//                 top.appendChild(player_classification);
+//             }
 
-            // Middle
-            let player_ranking = document.createElement('h2');
-            player_ranking.innerText = 'Gender Ranking: ' + players[i-1].ranking;
-            middle.appendChild(player_ranking);
+//             // Middle
+//             let player_ranking = document.createElement('h2');
+//             player_ranking.innerText = 'Gender Ranking: ' + players[i-1].ranking;
+//             middle.appendChild(player_ranking);
             
-            if (players[i-1].singles_games_played > 0) {
-                let player_singles_rating = document.createElement('h2');
-                if (players[i-1].singles_games_played >= 5)
-                    player_singles_rating.innerText = 'Singles: ' + players[i-1].singles_rating;
-                else
-                    player_singles_rating.innerText = 'Singles: (' + players[i-1].singles_rating + ')';
-                middle.appendChild(player_singles_rating);
-            }
+//             if (players[i-1].singles_games_played > 0) {
+//                 let player_singles_rating = document.createElement('h2');
+//                 if (players[i-1].singles_games_played >= 5)
+//                     player_singles_rating.innerText = 'Singles: ' + players[i-1].singles_rating;
+//                 else
+//                     player_singles_rating.innerText = 'Singles: (' + players[i-1].singles_rating + ')';
+//                 middle.appendChild(player_singles_rating);
+//             }
 
-            if (players[i-1].doubles_games_played > 0) {
-                let player_doubles_rating = document.createElement('h2');
-                if (players[i-1].doubles_games_played >= 5)
-                    player_doubles_rating.innerText = 'Doubles: ' + players[i-1].doubles_rating;
-                else
-                    player_doubles_rating.innerText = 'Doubles: (' + players[i-1].doubles_rating + ')';
-                middle.appendChild(player_doubles_rating);
-            }
+//             if (players[i-1].doubles_games_played > 0) {
+//                 let player_doubles_rating = document.createElement('h2');
+//                 if (players[i-1].doubles_games_played >= 5)
+//                     player_doubles_rating.innerText = 'Doubles: ' + players[i-1].doubles_rating;
+//                 else
+//                     player_doubles_rating.innerText = 'Doubles: (' + players[i-1].doubles_rating + ')';
+//                 middle.appendChild(player_doubles_rating);
+//             }
 
-            if (players[i-1].mixed_doubles_games_played > 0) {
-                let player_mixed_doubles_rating = document.createElement('h2');
-                if (players[i-1].mixed_doubles_games_played >= 5)
-                    player_mixed_doubles_rating.innerText = 'Mixed Doubles: ' + players[i-1].mixed_doubles_rating;
-                else
-                    player_mixed_doubles_rating.innerText = 'Mixed Doubles: (' + players[i-1].mixed_doubles_rating + ')';
-                middle.appendChild(player_mixed_doubles_rating);
-            }
+//             if (players[i-1].mixed_doubles_games_played > 0) {
+//                 let player_mixed_doubles_rating = document.createElement('h2');
+//                 if (players[i-1].mixed_doubles_games_played >= 5)
+//                     player_mixed_doubles_rating.innerText = 'Mixed Doubles: ' + players[i-1].mixed_doubles_rating;
+//                 else
+//                     player_mixed_doubles_rating.innerText = 'Mixed Doubles: (' + players[i-1].mixed_doubles_rating + ')';
+//                 middle.appendChild(player_mixed_doubles_rating);
+//             }
 
-            let player_wl = document.createElement('h2');
-            player_wl.innerText = `W/L: ${players[i-1].wins == 0 ? 0 : (players[i-1].losses == 0 ? 100 : (players[i-1].wins/(players[i-1].wins + players[i-1].losses) * 100).toFixed(0))}% (${players[i-1].wins}/${players[i-1].losses})`;
-            bottom.appendChild(player_wl);
+//             let player_wl = document.createElement('h2');
+//             player_wl.innerText = `W/L: ${players[i-1].wins == 0 ? 0 : (players[i-1].losses == 0 ? 100 : (players[i-1].wins/(players[i-1].wins + players[i-1].losses) * 100).toFixed(0))}% (${players[i-1].wins}/${players[i-1].losses})`;
+//             bottom.appendChild(player_wl);
 
-            // pp.querySelector('h2.player-rank').innerText = 'Gender Rank: ' + players[i-1].ranking;
-            // pp.querySelector('h2.player-overall').innerText = 'Rating: ' + (players[i-1].overall == -100 ? 'Ineligible' : (players[i-1].overall < 0 ? ((players[i-1].overall + 99).toFixed(2) + ' (Not fully eligible)') : players[i-1].overall.toFixed(2)));
+//             // pp.querySelector('h2.player-rank').innerText = 'Gender Rank: ' + players[i-1].ranking;
+//             // pp.querySelector('h2.player-overall').innerText = 'Rating: ' + (players[i-1].overall == -100 ? 'Ineligible' : (players[i-1].overall < 0 ? ((players[i-1].overall + 99).toFixed(2) + ' (Not fully eligible)') : players[i-1].overall.toFixed(2)));
             
 
-            pp.classList.remove('hide');
-            return;
-        }
-    })
-}
+//             pp.classList.remove('hide');
+//             return;
+//         }
+//     })
+// }
 
 async function search(search=null) {
     if (search == null)
