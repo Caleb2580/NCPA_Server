@@ -2822,9 +2822,9 @@ async function updateCollegeRankings() {
 
         let last_score = -1;
         for (team in tournament_teams) {
-            tournament_teams[team].points /= tournament_teams[team].weights_sum;
-            if (tournament_teams[team].points > last_score) {
-                last_score = tournament_teams[team].points;
+            tournament_teams[team].score /= tournament_teams[team].weights_sum;
+            if (tournament_teams[team].score > last_score) {
+                last_score = tournament_teams[team].score;
             }
         }
 
@@ -2836,21 +2836,21 @@ async function updateCollegeRankings() {
         let rank_counter = 1;
         let rank_catchup_counter = rank_counter;
         for (team in tournament_teams) {
-            if (tournament_teams[team].points < last_score) {
+            console.log(tournament_teams[team].score, last_score)
+            if (tournament_teams[team].score < last_score) {
                 tournament_teams[team].rank = rank_counter;
                 rank_catchup_counter = rank_counter;
-                last_score = tournament_teams[team].points;
+                last_score = tournament_teams[team].score;
             } else {
                 tournament_teams[team].rank = rank_catchup_counter;
-                last_score = tournament_teams[team].points;
+                last_score = tournament_teams[team].score;
             }
             rank_counter += 1;
             // console.log(team, tournament_teams[team].rank);
             try {
                 await pool.query(`UPDATE College SET ranking=${tournament_teams[team].rank} WHERE name="${team}"`);
-                console.log(tournament_teams[team].rank)
+                console.log(rank)
             } catch (error) {
-                console.log(error)
                 try {
                     await pool.query(`INSERT INTO College(name, ranking) VALUES("${team}", ${tournament_teams[team].rank})`);
                 } catch (error2) {
