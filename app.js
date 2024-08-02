@@ -1051,7 +1051,7 @@ app.get('/api/get-tournaments', async(req, res) => {
             //     ORDER BY begin_date DESC;
             // `),
             pool.query(`
-                SELECT ${to_grab}
+                SELECT *
                 FROM Tournament
                 ORDER BY begin_date DESC;
             `),
