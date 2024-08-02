@@ -853,6 +853,17 @@ app.post('/admin/edit-profile', authenticate, async(req, res) => {
     }
 });
 
+app.post('/admin/update-college-rankings', authenticate, async(req, res) => {
+    try {
+        let r = updateCollegeRankings();
+        if (r)
+            return res.send({'success': true});
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
 app.post('/admin/delete-profile', authenticate, async(req, res) => {
     try {
         let r = (await pool.query(`DELETE FROM Profile WHERE profile_id=${pool.escape(req.body.profile_id)}`))[0];
