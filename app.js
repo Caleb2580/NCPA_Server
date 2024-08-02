@@ -227,6 +227,7 @@ app.post('/register', async(req, res) => {
         lname = capitalizeFirstLetter(lname);
 
         if (err !== null) {
+            console.log('error creating account', err)
             return res.send({'success': false, 'error': err});
         }
 
