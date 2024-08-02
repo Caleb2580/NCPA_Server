@@ -245,6 +245,7 @@ async function setupGrabs(setup=false) {
 
     players = await getPlayers();
     tournaments = await getTournaments();
+    console.log(tournaments)
 
     let new_player = await getPlayer(info.player.profile_id);
     for (key in new_player) {
