@@ -1043,11 +1043,16 @@ app.get('/api/get-tournaments', async(req, res) => {
         }
 
         let r = await Promise.all([
+            // pool.query(`
+            //     SELECT ${to_grab}
+            //     FROM Tournament
+            //     WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            //     AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            //     ORDER BY begin_date DESC;
+            // `),
             pool.query(`
                 SELECT ${to_grab}
                 FROM Tournament
-                WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-                AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
                 ORDER BY begin_date DESC;
             `),
 
