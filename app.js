@@ -1090,10 +1090,13 @@ app.get('/api/get-tournaments', async(req, res) => {
         ]);
 
 
-        let current = r[0][0];
+        // let current = r[0][0];
         let past = r[1][0];
         let upcoming = r[2][0];
         let teams = r[3][0];
+        let current = await pool.query(`
+            SELECT * FROM Tournament;
+        `)[0];
 
         let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'teams': teams};
         res.send({'success': true, 'tournaments': tournaments})
