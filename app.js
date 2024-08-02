@@ -671,11 +671,16 @@ app.post('/admin/create-tournament-team', authenticate, async(req, res) => {
 
 app.get('/admin/get-tournaments', authenticate, async(req, res) => {
     try {
+        // let current = (await pool.query(`
+        //     SELECT *
+        //     FROM Tournament
+        //     WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+        //     AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+        //     ORDER BY begin_date DESC;
+        // `))[0];
         let current = (await pool.query(`
             SELECT *
             FROM Tournament
-            WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-            AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
             ORDER BY begin_date DESC;
         `))[0];
         let past = (await pool.query(`
