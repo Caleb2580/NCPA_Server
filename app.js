@@ -1028,6 +1028,7 @@ app.get('/api/logged-in', async(req, res) => {
     }
 })
 
+console.log('updating college rankings')
 updateCollegeRankings();
 
 
