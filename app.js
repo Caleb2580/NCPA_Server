@@ -86,7 +86,6 @@ function authenticate(req, res, next) {
         }
 
         jwt.verify(token, JWT_SECRET, async(err, user) => {
-            console.log(user)
             let permission = await getPermission(user.profile_id);
             if (err || permission != 5) {
                 if (req.method === 'GET') {
