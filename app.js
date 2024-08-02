@@ -830,7 +830,7 @@ app.post('/admin/edit-profile', authenticate, async(req, res) => {
         for (let key in profile_info) {
             let s = key + '='
             if (key == 'first_name' || key == 'last_name') {
-                s += pool.escape(capitalizeFirstLetter(profile_info[key]));
+                s += pool.escape(capitalizeFirstLetter(profile_info[key]).trimEnd());
             } else {
                 s += pool.escape(profile_info[key]);
             }
