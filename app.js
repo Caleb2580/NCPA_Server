@@ -2848,10 +2848,11 @@ async function updateCollegeRankings() {
             // console.log(team, tournament_teams[team].rank);
             try {
                 await pool.query(`UPDATE College SET ranking=${tournament_teams[team].rank} WHERE name="${team}"`);
-            } catch {
+            } catch (error) {
                 try {
                     await pool.query(`INSERT INTO College(name, ranking) VALUES("${team}", ${tournament_teams[team].rank})`);
-                } catch {
+                } catch (error2) {
+                    console.log(error2)
                     continue;
                 }
             }
