@@ -85,7 +85,7 @@ body, html {
     color: rgb(250, 250, 250);
     background-color: rgb(10, 10, 10);
     border: 2px solid rgb(10, 10, 10);
-    padding: .8em;
+    padding: .6em .8em;
     border-radius: 1em;
 }
 
