@@ -379,11 +379,14 @@ async function setupGrabs(setup=false) {
             delete info.player_teams[pt].sub_team_members;
             for (let s in info.player_teams[pt].sub_teams) {
                 console.log(s)
-                if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
-                    info.player_teams[pt].sub_teams[s].members = [];
+                try {
+                    if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
+                        info.player_teams[pt].sub_teams[s].members = [];
+                    }
+                } catch (error) {
+                    ;
                 }
-                console.log(info.player_teams[pt].sub_teams[s]);
-                console.log(info.player_teams[pt].sub_teams[s].members)
+                
             }
         }
     }
