@@ -18,6 +18,10 @@
 </div>
 
 <script>
+
+    function detectSafari() {
+        return (navigator.platform.toLowerCase().includes('mac') && (navigator.userAgent.toLowerCase().includes('safari') && !navigator.userAgent.toLowerCase().includes('chrome')));
+    }
     
     async function setup() {
         let me = await fetch('/api/logged-in').then(res => res.json());
@@ -27,6 +31,9 @@
                 login.innerText = 'DASHBOARD';
                 login.setAttribute('href', '/dashboard');
             });
+        }
+        if (detectSafari() == true) {
+            alert("Please note: This website may not display as intended and certain features might not function correctly in Safari. For the best experience, we recommend using a different browser.")
         }
     }
 
