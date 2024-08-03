@@ -503,13 +503,10 @@ function getTournament(t_name) {
 }
 
 function selectD() {
-    let type = document.querySelector('.date-div div.selected').innerText.toLowerCase();
+    let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trim();
     let t_cont = document.querySelector('.page.Tournaments .tournament-container');
     t_cont.innerHTML = '';
 
-    console.log(tournaments)
-    console.log(type)
-    console.log(tournaments[type.trimEnd()])
     if (type in tournaments && tournaments[type].length > 0) {
         for (i in tournaments[type]) {
             let t = document.createElement('div');
