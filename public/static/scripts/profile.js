@@ -508,6 +508,8 @@ function selectD() {
     t_cont.innerHTML = '';
 
     console.log(tournaments)
+    console.log(type)
+    console.log(tournaments[type])
     if (type in tournaments && tournaments[type].length > 0) {
         for (i in tournaments[type]) {
             let t = document.createElement('div');
