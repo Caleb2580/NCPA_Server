@@ -507,7 +507,7 @@ function selectD() {
     let t_cont = document.querySelector('.page.Tournaments .tournament-container');
     t_cont.innerHTML = '';
 
-    console.log(tournaments[type])
+    console.log(tournaments)
     if (type in tournaments && tournaments[type].length > 0) {
         for (i in tournaments[type]) {
             let t = document.createElement('div');
