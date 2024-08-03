@@ -430,7 +430,7 @@ async function menuSelect(event) {
     
     event.target.classList.add('selected');
     
-    select(event.target.innerText);
+    select(event.target.innerText.trimEnd());
 }
 
 function createStatDiv(title, content) {
@@ -2142,7 +2142,7 @@ function manageTournament(t_name, action=null) {
 async function select(p) {
 
     document.querySelectorAll('.stuff .items button').forEach(btn => {
-        if (btn.innerText === p.replace('-', ' ')) {
+        if (btn.innerText.trimEnd() === p.replace('-', ' ')) {
             btn.classList.add('selected');
         } else {
             btn.classList.remove('selected');
@@ -2432,7 +2432,7 @@ async function select(p) {
                         return;
                     }
 
-                    let con = confirm(`Are you sure you want to change your ${inp.parentElement.querySelector('h1').innerText.toLowerCase()} from ${inp.getAttribute('placeholder')} to ${val}`)
+                    let con = confirm(`Are you sure you want to change your ${inp.parentElement.querySelector('h1').innerText.toLowerCase().trimEnd()} from ${inp.getAttribute('placeholder')} to ${val}`)
                     if (!con) {
                         return;
                     }
@@ -2450,7 +2450,7 @@ async function select(p) {
                     if (r.success === true) {
                         info.player[to_set] = val;
                         inp.setAttribute('placeholder', val);
-                        let update_string = `Updated your ${inp.parentElement.querySelector('h1').innerText.toLowerCase()} to ${val}`;
+                        let update_string = `Updated your ${inp.parentElement.querySelector('h1').innerText.toLowerCase().trimEnd()} to ${val}`;
                         alert(update_string);
                     } else {
                         alert(r.error);
