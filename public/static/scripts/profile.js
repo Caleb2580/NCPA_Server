@@ -135,6 +135,7 @@ async function getTournaments() {
         alert('Something went wrong when grabbing tournaments');
     }
     ts = ts['tournaments'];
+    console.log(ts)
     for (let type in ts) {
         if (type == 'teams' || type == 'requests') {
             continue;
@@ -242,8 +243,6 @@ async function setupGrabs(setup=false) {
         window.location = '/login';
         return;
     }
-
-    console.log(info)
 
     players = await getPlayers();
     tournaments = await getTournaments();
