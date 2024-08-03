@@ -345,7 +345,8 @@ async function setupGrabs(setup=false) {
                 info.player_teams[i].sub_teams[s] = info.player_teams[i].sub_teams[s].split(':');
                 info.player_teams[i].sub_teams[s] = {
                     sub_id: info.player_teams[i].sub_teams[s][0],
-                    ind: info.player_teams[i].sub_teams[s][1]
+                    ind: info.player_teams[i].sub_teams[s][1],
+                    members: []
                 }
             }
         }
@@ -381,6 +382,7 @@ async function setupGrabs(setup=false) {
                 if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
                     info.player_teams[pt].sub_teams[s].members = [];
                 }
+                console.log(info.player_teams[pt].sub_teams[s]);
                 console.log(info.player_teams[pt].sub_teams[s].members)
             }
         }
