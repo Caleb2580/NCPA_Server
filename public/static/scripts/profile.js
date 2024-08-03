@@ -134,7 +134,6 @@ async function getTournaments() {
     if (ts.success === false) {
         alert('Something went wrong when grabbing tournaments');
     }
-    console.log(ts)
     ts = ts['tournaments'];
     for (let type in ts) {
         if (type == 'teams' || type == 'requests') {
@@ -208,7 +207,7 @@ async function getTournaments() {
     }
 
     delete ts['teams'];
-
+    console.log(ts)
     return ts;
 }
 
