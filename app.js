@@ -1047,18 +1047,14 @@ app.get('/api/get-tournaments', async(req, res) => {
             throw new Error('');
         }
         
-        // pool.query(`
-        //     SELECT ${to_grab}
-        //     FROM Tournament
-        //     WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-        //     AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
-        //     ORDER BY begin_date DESC;
-        // `),
+        
 
         let r = await Promise.all([
             await pool.query(`
-                SELECT *
+                SELECT ${to_grab}
                 FROM Tournament
+                WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
                 ORDER BY begin_date DESC;
             `),
 
@@ -1090,15 +1086,12 @@ app.get('/api/get-tournaments', async(req, res) => {
         ]);
 
 
-        // let current = r[0][0];
+        let current = r[0][0];
         let past = r[1][0];
         let upcoming = r[2][0];
         let teams = r[3][0];
-        let current = (await pool.query(`
-            SELECT * FROM Tournament;
-        `))[0];
 
-        console.log(current);
+        console.log('c', current);
 
         let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'teams': teams};
         res.send({'success': true, 'tournaments': tournaments})
