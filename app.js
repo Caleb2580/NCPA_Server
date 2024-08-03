@@ -1048,7 +1048,6 @@ app.get('/api/get-tournaments', async(req, res) => {
         }
         
         
-
         let r = await Promise.all([
             await pool.query(`
                 SELECT ${to_grab}
