@@ -6,6 +6,12 @@
     <title>Tournaments - Dashboard</title>
     <link rel="stylesheet" href="profile.css">
     <link rel="shortcut icon" type="x-icon" href="NCPA_logo_halfsize.png">
+    <script>
+        function detectSafari() {
+        if (navigator.platform.toLowerCase().includes('mac') && (navigator.userAgent.toLowerCase().includes('safari') && !navigator.userAgent.toLowerCase().includes('chrome')))
+            alert("Please note: This website may not display as intended and certain features might not function correctly in Safari. For the best experience, we recommend using a different browser.");
+        }
+    </script>
 </head>
 <body>
     <div class="loading hide">

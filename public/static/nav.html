@@ -20,7 +20,8 @@
 <script>
 
     function detectSafari() {
-        return (navigator.platform.toLowerCase().includes('mac') && (navigator.userAgent.toLowerCase().includes('safari') && !navigator.userAgent.toLowerCase().includes('chrome')));
+        if (navigator.platform.toLowerCase().includes('mac') && (navigator.userAgent.toLowerCase().includes('safari') && !navigator.userAgent.toLowerCase().includes('chrome')))
+            alert("Please note: This website may not display as intended and certain features might not function correctly in Safari. For the best experience, we recommend using a different browser.");
     }
     
     async function setup() {
@@ -32,9 +33,7 @@
                 login.setAttribute('href', '/dashboard');
             });
         }
-        if (detectSafari() == true) {
-            alert("Please note: This website may not display as intended and certain features might not function correctly in Safari. For the best experience, we recommend using a different browser.")
-        }
+        detectSafari();
     }
 
     setup();
