@@ -503,7 +503,7 @@ function getTournament(t_name) {
 }
 
 function selectD() {
-    let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trim();
+    let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trimEnd();
     let t_cont = document.querySelector('.page.Tournaments .tournament-container');
     t_cont.innerHTML = '';
 
