@@ -243,6 +243,8 @@ async function setupGrabs(setup=false) {
         return;
     }
 
+    console.log(info)
+
     players = await getPlayers();
     tournaments = await getTournaments();
     console.log(tournaments)
