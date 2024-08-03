@@ -381,7 +381,7 @@ async function setupGrabs(setup=false) {
                 console.log(s)
                 try {
                     if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
-                        info.player_teams[pt].sub_teams[s].members = [];
+                        info.player_teams[pt].sub_teams[s].members = '';
                     }
                 } catch (error) {
                     ;
