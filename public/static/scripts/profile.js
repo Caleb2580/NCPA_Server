@@ -378,7 +378,7 @@ async function setupGrabs(setup=false) {
             delete info.player_teams[pt].sub_team_members;
             for (let s in info.player_teams[pt].sub_teams) {
                 console.log(s)
-                if (!('members' in info.player_teams[pt].sub_teams[s])) {
+                if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
                     info.player_teams[pt].sub_teams[s].members = [];
                 }
             }
