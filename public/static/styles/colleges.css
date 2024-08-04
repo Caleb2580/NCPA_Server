@@ -143,7 +143,7 @@ font-size: 2.1em;
 min-height: calc(100% - 100px);
 background-color: rgb(210, 210, 210);
 display: flex;
-justify-content: center;
+justify-content: flex-start;
 align-items: left;
 flex-direction: column;
 }

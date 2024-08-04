@@ -107,8 +107,8 @@ function authenticate(req, res, next) {
 
 // updateCollegeRankings();
 
-// let base_url = 'http://localhost:3000';
-let base_url = 'https://api.ncpaofficial.com'
+let base_url = 'http://localhost:3000';
+// let base_url = 'https://api.ncpaofficial.com'
 
 // Routes
 
@@ -500,7 +500,6 @@ app.get('/success', async(req, res) => {
 
 app.get('/register-success', async(req, res) => {
     try {
-
         let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
         if (tm.length == 0) {
             const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
@@ -1085,8 +1084,6 @@ app.get('/api/get-tournaments', async(req, res) => {
         let upcoming = r[2][0];
         let teams = r[3][0];
 
-        console.log('c', current);
-
         let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'teams': teams};
         res.send({'success': true, 'tournaments': tournaments})
 
@@ -1246,7 +1243,6 @@ app.post('/api/send-team-request', async(req, res) => {
 
 app.post('/api/remove-player-from-team', async(req, res) => {
     try {
-        console.log('hi')
         let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
         
         if (user === null) {

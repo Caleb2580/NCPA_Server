@@ -27,11 +27,13 @@
                 <button onclick="reg_player=true; regPlayer(event);">Player</button>
                 <h5>OR</h5>
                 <button onclick="reg_player=false; regContinue(1)"">Captain</button>
+                <h5>OR</h5>
+                <button onclick="reg_player=true; regContinue(1)"">Captain and Player</button>
             </div>
             <div>
                 <h5>Captain Key</h5>
                 <input type="text" class="captain-key">
-                <button onclick="regEnterCaptain()">Enter</button>
+                <button onclick="regEnterCaptain(event)">Enter</button>
             </div>
 
             <script>
@@ -72,7 +74,7 @@
                     }
                 }
             
-                async function regEnterCaptain() {
+                async function regEnterCaptain(event) {
                     let tournament = document.querySelector('.alert-screen .register');
                     tournament = tournament.getAttribute('id');
                     tournament = tournament.substring(4, tournament.length);
@@ -92,18 +94,27 @@
                         })
                     }).then(r => r.json());
 
-                    if (r.success === true) {
-                        alert('Success');
-                        regX();
-                        await setup('Tournaments');
+                    if (reg_player == false) {
+                        if (r.success === true) {
+                            alert('Success');
+                            regX();
+                            await setup('Tournaments');
+                        } else {
+                            alert(r.error);
+                        }
                     } else {
-                        alert(r.error);
+                        if (r.success === true) {
+                            regPlayer(event);
+                        } else {
+                            alert(r.error);
+                        }
                     }
                 }
                 
                 let regging = false;
 
                 function regPlayer(event) {
+                    console.log('hi')
                     if (regging)
                         return;
 
@@ -169,9 +180,12 @@
                 <button class="signout-btn">Sign Out</button>
             </div>
             
-            <span onclick="openCloseMenu();">&#9776;</span>
+            <!-- <span onclick="openCloseMenu();">&#9776;</span> -->
+            <div onclick="openCloseMenu();" class="span-div">
+                <div></div>
+            </div>
         </div>
-    <div class="page">
+    <div class="page" onclick="">
         
     </div>
 

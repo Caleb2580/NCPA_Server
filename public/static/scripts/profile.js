@@ -24,10 +24,13 @@ let months = {
 
 function openCloseMenu() {
     let main = document.querySelector('.main');
+    let back_arrow = document.querySelector('.menu span');
 
     if (main.classList.contains('slid-over')) {
+        // back_arrow.innerText = '<';
         main.classList.remove('slid-over');
     } else {
+        // back_arrow.innerText = '>';
         main.classList.add('slid-over');
     }
 }
@@ -244,7 +247,6 @@ async function setupGrabs(setup=false) {
 
     players = await getPlayers();
     tournaments = await getTournaments();
-    console.log(tournaments)
 
     let new_player = await getPlayer(info.player.profile_id);
     for (key in new_player) {
@@ -352,7 +354,7 @@ async function setupGrabs(setup=false) {
         }
 
         // Sub team members
-        if (info.player_teams[i].sub_team_members === null) {
+        if (info.player_teams[i].sub_team_members == null) {
             info.player_teams[i].sub_team_members = [];
         } else {
             info.player_teams[i].sub_team_members = info.player_teams[i].sub_team_members.split(',');
@@ -374,19 +376,12 @@ async function setupGrabs(setup=false) {
                 }
             }
         }
-
         for (let pt in info.player_teams) {
             delete info.player_teams[pt].sub_team_members;
             for (let s in info.player_teams[pt].sub_teams) {
-                console.log(s)
-                try {
-                    if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
-                        info.player_teams[pt].sub_teams[s].members = '';
-                    }
-                } catch (error) {
-                    ;
+                if (!(Object.keys(info.player_teams[pt].sub_teams[s]).includes('members'))) {
+                    info.player_teams[pt].sub_teams[s].members = '';
                 }
-                
             }
         }
     }
@@ -413,7 +408,7 @@ async function setup(location=null) {
         const urlParams = new URLSearchParams(window.location.search);
         let v = urlParams.get('view');
         if (v === null) {
-            await select('Dashboard');
+            await select('Tournaments');
         } else {
             await select(v);
         }
@@ -438,6 +433,8 @@ async function menuSelect(event) {
     event.target.classList.add('selected');
     
     select(event.target.innerText.trimEnd());
+    
+    document.querySelector('.span-div').click();
 }
 
 function createStatDiv(title, content) {
@@ -467,6 +464,7 @@ function extractNums(str) {
 
 function selectDate(event, h) {
     event.stopPropagation();
+    clickedPage();
     let e = event.target;
     if (h) {
         e = event.target.parentElement;
@@ -625,7 +623,7 @@ function selectD() {
                     if (player_tournament.player == 1)
                         register.innerText = 'Register as a captain';
                     else if (player_tournament.captain == 1) {
-                        register.innerText = 'Register';
+                        register.innerText = 'Register as a player';
                     }
                     register.setAttribute('onclick', `
                         document.querySelector('.alert-screen').classList.add('show');
@@ -1562,7 +1560,7 @@ function manage(t_name, t_manage, action=null) {
                 let autofill_btn = document.createElement('button');
                 autofill_btn.classList.add('autofill');
                 autofill_btn.classList.add('team');
-                autofill_btn.innerText = 'Autofill';
+                autofill_btn.innerHTML = 'Auto<br>Fill';
                 autofill_btn.addEventListener('click', async(event) => {
                     document.querySelector('.loading').classList.remove('hide');
                     
@@ -1634,7 +1632,7 @@ function manage(t_name, t_manage, action=null) {
                 let delete_btn = document.createElement('button');
                 delete_btn.classList.add('delete');
                 delete_btn.classList.add('team');
-                delete_btn.innerText = 'Delete';
+                delete_btn.innerText = 'Delete Team';
                 delete_btn.addEventListener('click', async(event) => {
                     document.querySelector('.loading').classList.remove('hide');
                     let r = await fetch('/api/delete-sub-team', {
@@ -2356,6 +2354,8 @@ async function select(p) {
             let nom = document.createElement('h2');
             nom.innerText = 'No matches found'
             inner.appendChild(nom);
+            inner.style.height = '80%';
+            past_matches_div.style.height = '100%';
         }
 
         past_matches_div.appendChild(inner);
@@ -2593,6 +2593,14 @@ document.querySelector('.signout-btn').addEventListener('click', async(event) =>
     } else {
         alert('Something went wrong');
     }
+})
+
+function clickedPage() {
+    document.querySelector('.main').classList.add('slid-over');
+}
+
+document.querySelector('.page').addEventListener('click', event => {
+    clickedPage();
 })
 
 

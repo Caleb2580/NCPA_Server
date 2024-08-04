@@ -61,7 +61,7 @@
                 </div>
     
                 <div style="width: 100%;" class="inner">
-                    <button class="register-btn" style="padding: .2em 1.5em;" onclick="Next()">&#x2794;</button>
+                    <button class="register-btn" style="padding: .2em 1.5em;" onclick="NextAndPassword()">&#x2794;</button>
                 </div>
                 <div class="inner">
                     <a href="/login">Already have an account?</a>
@@ -252,6 +252,36 @@
             e.classList.add('selected');
         }
         
+        function NextAndPassword() {
+            let fname = document.querySelector('#fname').value;
+            let lname = document.querySelector('#lname').value;
+            let email = document.querySelector('#email').value;
+            let password = document.querySelector('#password').value;
+            let confirm_password = document.querySelector('#confirm-password').value;
+
+            if (fname.length == 0) {
+                alert('Please enter a first name');
+                return;
+            } else if (lname.length == 0) {
+                alert('Please enter a last name');
+                return;
+            } else if (email.length == 0) {
+                alert('Please enter an email');
+                return;
+            } else if (!email.includes('@')) {
+                alert('Please enter a valid email');
+                return;
+            } else if (password.length < 6) {
+                alert('Your password must have at least 6 characters');
+                return;
+            } else if (confirm_password !== password) {
+                alert('Your passwords do not match');
+                return;
+            }
+
+            Next();
+        }
+
         function Next() {
             conts = document.querySelectorAll('.container');
             conts.forEach(async(cont) => {
@@ -279,22 +309,37 @@
             }
             if (isNaN(event.key) || event.target.value.length >= 2) {
                 event.preventDefault();
+            } else if (event.target.value.length == 1) {
+                event.preventDefault();
+                event.target.value += event.key
+                document.querySelector('#day').focus();
             }
         });
 
         document.querySelector('#day').addEventListener('keydown', event => {
             let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];
             if (except.includes(event.key)) {
+                if (event.key == 'Backspace' && event.target.value.length == 0) {
+                    document.querySelector('#month').focus();
+                }
                 return;
             }
+            console.log(event.target.value.length)
             if (isNaN(event.key) || event.target.value.length >= 2) {
                 event.preventDefault();
+            } else if (event.target.value.length == 1) {
+                event.preventDefault();
+                event.target.value += event.key;
+                document.querySelector('#year').focus();
             }
         });
 
         document.querySelector('#year').addEventListener('keydown', event => {
             let except = ['ArrowLeft', 'ArrowRight', 'Backspace'];
             if (except.includes(event.key)) {
+                if (event.key == 'Backspace' && event.target.value.length == 0) {
+                    document.querySelector('#day').focus();
+                }
                 return;
             }
             if (isNaN(event.key) || event.target.value.length >= 4) {

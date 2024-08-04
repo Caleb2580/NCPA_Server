@@ -30,28 +30,54 @@ html, body {
     position: relative;
 }
 
-.menu span {
+.menu .span-div {
     display: none;
+    justify-content: center;
+    align-items: center;
     position: absolute;
-    color: rgb(10, 10, 10);
-    background-color: transparent;
-    height: 1.5em;
-    width: 1.5em;
+    background-color: rgb(10, 10, 10);
+    height: 2em;
+    width: 2em;
     cursor: pointer;
     text-align: center;
-    top: 0;
-    right: -1.5em;
+    top: .5em;
+    right: -2.5em;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     z-index: 10;
-    font-weight: 100;
-    font-size: 1.5em;
+    font-weight: 1000;
+    font-size: 1.2em;
+    border-radius: 1.5em;
+    box-shadow: 0 0 5px rgba(0, 0, 0, .3);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+}
+
+.menu .span-div div {
+    width: 100%;
+    height: 100%;
+    background-image: url('arrow.png');
+    background-size: 50%;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* font-family: 'Nanum Gothic';
+    color: rgb(250, 250, 250);
+    background-color: transparent;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 1000;
+    font-size: .8em; */
+}
+
+.main.slid-over .menu .span-div div {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
 }
 
 .page {
-    width: calc(100% - 19em);
-    height: calc(100% - 4em);
-    padding: 2em;
+    width: calc(100% - 21em);
+    height: calc(100% - 6em);
+    padding: 3em;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -950,16 +976,16 @@ html, body {
 
 
 @media screen and (max-width: 1000px) {
-    .menu span {
-        display: inline;
+    .menu .span-div {
+        display: flex;
     }
 
     .main {
-        width: calc(100% + 14em);
+        width: calc(100% + 15em);
     }
 
     .main.slid-over {
-        margin-left: -14em;
+        margin-left: -15em;
     }
 
     /* .page.Dashboard .stat-container {

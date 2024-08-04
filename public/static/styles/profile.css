@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Lexend+Peta:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
 
 
 html, body {
@@ -122,27 +123,53 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 
 .menu {
     height: 100%;
-    width: 16em;
+    width: 15em;
     background-color: rgb(22, 32, 44);
     position: relative;
 }
 
-.menu span {
+.menu .span-div {
     display: none;
+    justify-content: center;
+    align-items: center;
     position: absolute;
-    color: rgb(250, 250, 250);
-    background-color: transparent;
-    height: 1.5em;
-    width: 1.5em;
+    background-color: rgb(22, 32, 44);
+    height: 2em;
+    width: 2em;
     cursor: pointer;
     text-align: center;
-    top: 0;
-    right: 0;
+    top: .5em;
+    right: -2.5em;
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
     z-index: 10;
-    font-weight: 100;
+    font-weight: 1000;
     font-size: 1.2em;
+    border-radius: 1.5em;
+    box-shadow: 0 0 5px rgba(0, 0, 0, .3);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+}
+
+.menu .span-div div {
+    width: 100%;
+    height: 100%;
+    background-image: url('arrow.png');
+    background-size: 50%;
+    background-position: center;
+    background-repeat: no-repeat;
+    /* font-family: 'Nanum Gothic';
+    color: rgb(250, 250, 250);
+    background-color: transparent;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 1000;
+    font-size: .8em; */
+}
+
+.main.slid-over .menu .span-div div {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
 }
 
 .alert-screen {
@@ -161,9 +188,9 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 }
 
 .page {
-    width: calc(100% - 22em);
-    height: calc(100% - 4em);
-    padding: 2em 3em;
+    width: calc(100% - 21em);
+    height: calc(100% - 6em);
+    padding: 3em 3em;
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -254,8 +281,10 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 }
 
 .page.Dashboard h1.name {
+    color: rgb(10, 10, 10);
     margin: 0;
-    font-weight: 500;
+    font-size: 1.8em;
+    font-weight: 400;
 }
 
 .page.Dashboard h6.college {
@@ -311,6 +340,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     display: flex;
     flex-direction: column;
     gap: 1em;
+    height: 100%;
 }
 
 .page.Dashboard .past-matches h1 {
@@ -434,7 +464,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 .page.Account-Info {
     display: flex;
     justify-content: flex-start;
-    align-items: flex-start;
+    align-items: center;
     flex-direction: column;
     gap: 2em;
 }
@@ -445,6 +475,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     align-items: flex-start;
     flex-direction: column;
     gap: .5em;
+    width: 80%;
 }
 
 .page.Account-Info .editable h1{
@@ -459,7 +490,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     border-radius: 10px;
     font-size: 1.0em;
     padding: .5em;
-    width: 17em;
+    width: 30em;
     font-family: 'Lexend Peta';
     color: rgb(31, 55, 85);
 }
@@ -555,7 +586,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 .page.Tournaments .List {
     width: 100%;
     gap: 1em;
-    margin: 1em 0;
+    /* margin: 1em 0; */
     justify-content: flex-start;
     align-items: flex-start;
 }
@@ -1302,7 +1333,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 /* Matches */
 
 .page.Matches {
-    width: calc(100% - 16em);
+    width: calc(100% - 15em);
     min-height: 100%;
     display: flex;
     flex-direction: column;
@@ -1323,16 +1354,20 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 
 
 @media screen and (max-width: 1000px) {
-    .menu span {
-        display: inline;
+    .menu .span-div {
+        display: flex;
     }
 
     .main {
-        width: calc(100% + 14em);
+        width: calc(100% + 15em);
     }
 
     .main.slid-over {
-        margin-left: -14em;
+        margin-left: -15em;
+    }
+
+    .page.Account-Info .editable input {
+        width: calc(100% - 1em);
     }
 
     /* .page.Dashboard .stat-container {

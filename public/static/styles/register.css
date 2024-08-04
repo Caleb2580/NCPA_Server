@@ -228,8 +228,8 @@ input {
 }
 
 .inner a {
-    font-size: .6em;
-    color: rgb(126, 173, 237);
+    font-size: .7em;
+    color: rgb(31, 55, 85);
     cursor: pointer;
     width: 100%;
     text-align: center;

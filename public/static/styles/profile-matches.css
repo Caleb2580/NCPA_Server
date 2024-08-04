@@ -143,11 +143,12 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     min-height: calc(100% - 2em);
     background-color: rgb(250, 250, 250);
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     flex-direction: column;
     font-family: 'Lexend Peta';
     font-weight: 700;
-    padding: 1em 1em;
+    padding: 1em .5em;
+    margin-top: 1em;
 }
 
 .main {
@@ -507,9 +508,9 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     }
 }
 
-@media screen and (max-width: 900px) {
+@media screen and (max-width: 800px) {
     .main {
-        font-size: .7em;
+        font-size: .8em;
     }
 
     .column-additions .con button {
