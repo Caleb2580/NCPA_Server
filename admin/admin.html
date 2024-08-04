@@ -275,7 +275,7 @@
                             let save_team_name = document.createElement('button');
                             save_team_name.innerText = 'Save';
                             save_team_name.addEventListener('click', async(event) => {
-                                let new_name = document.querySelector('.page .Tournaments .View.Team .change_team_name').value;
+                                let new_name = document.querySelector('.page .Tournaments .View.Team .change_team_name').value.trimEnd();
                                 let r = await fetch('/admin/change-team-name', {
                                     method: 'POST',
                                     headers: {
@@ -394,7 +394,7 @@
                         function select() {
                             let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trimEnd();
                             let t_cont = document.querySelector('.tournament-container');
-                            t_cont.innerHTML = '';    
+                            t_cont.innerHTML = '';
 
                             if (type in tournaments && tournaments[type].length > 0) {
                                 for (i in tournaments[type]) {
@@ -520,7 +520,6 @@
                             } else {
                                 let message = document.createElement('h1');
                                 message.innerText = "No tournaments found";
-                                message.innerText = type + '<br>' + JSON.stringify(tournaments[type]);
                                 t_cont.appendChild(message);
                             }
                         }
@@ -727,16 +726,16 @@
                     <script>
                         
                         async function createTournament() {
-                            let name = document.querySelector('.Create .info input.name').value;
-                            let begin_date = document.querySelector('.Create .info input.begin_date').value;
-                            let end_date = document.querySelector('.Create .info input.end_date').value;
-                            let registration_open = document.querySelector('.Create .info input.registration_open').value;
-                            let registration_close = document.querySelector('.Create .info input.registration_close').value;
-                            let venue = document.querySelector('.Create .info input.venue').value;
-                            let venue_address = document.querySelector('.Create .info input.venue_address').value;
-                            let multiplier = document.querySelector('.Create .info input.multiplier').value;
-                            let registration_price = document.querySelector('.Create .info input.registration_price').value;
-                            let description = document.querySelector('.Create .info textarea.description').value;
+                            let name = document.querySelector('.Create .info input.name').value.trimEnd();
+                            let begin_date = document.querySelector('.Create .info input.begin_date').value.trimEnd();
+                            let end_date = document.querySelector('.Create .info input.end_date').value.trimEnd();
+                            let registration_open = document.querySelector('.Create .info input.registration_open').value.trimEnd();
+                            let registration_close = document.querySelector('.Create .info input.registration_close').value.trimEnd();
+                            let venue = document.querySelector('.Create .info input.venue').value.trimEnd();
+                            let venue_address = document.querySelector('.Create .info input.venue_address').value.trimEnd();
+                            let multiplier = document.querySelector('.Create .info input.multiplier').value.trimEnd();
+                            let registration_price = document.querySelector('.Create .info input.registration_price').value.trimEnd();
+                            let description = document.querySelector('.Create .info textarea.description').value.trimEnd();
 
                             if (name.length == 0) {
                                 return alert('Please enter a tournament name');
@@ -865,16 +864,16 @@
                     <script>
                         
                         async function editTournament() {
-                            let name = document.querySelector('.Create.Edit .info input.name').value;
-                            let begin_date = document.querySelector('.Create.Edit .info input.begin_date').value;
-                            let end_date = document.querySelector('.Create.Edit .info input.end_date').value;
-                            let registration_open = document.querySelector('.Create.Edit .info input.registration_open').value;
-                            let registration_close = document.querySelector('.Create.Edit .info input.registration_close').value;
-                            let venue = document.querySelector('.Create.Edit .info input.venue').value;
-                            let venue_address = document.querySelector('.Create.Edit .info input.venue_address').value;
-                            let multiplier = document.querySelector('.Create.Edit .info input.multiplier').value;
-                            let registration_price = document.querySelector('.Create.Edit .info input.registration_price').value;
-                            let description = document.querySelector('.Create.Edit .info textarea.description').value;
+                            let name = document.querySelector('.Create.Edit .info input.name').value.trimEnd();
+                            let begin_date = document.querySelector('.Create.Edit .info input.begin_date').value.trimEnd();
+                            let end_date = document.querySelector('.Create.Edit .info input.end_date').value.trimEnd();
+                            let registration_open = document.querySelector('.Create.Edit .info input.registration_open').value.trimEnd();
+                            let registration_close = document.querySelector('.Create.Edit .info input.registration_close').value.trimEnd();
+                            let venue = document.querySelector('.Create.Edit .info input.venue').value.trimEnd();
+                            let venue_address = document.querySelector('.Create.Edit .info input.venue_address').value.trimEnd();
+                            let multiplier = document.querySelector('.Create.Edit .info input.multiplier').value.trimEnd();
+                            let registration_price = document.querySelector('.Create.Edit .info input.registration_price').value.trimEnd();
+                            let description = document.querySelector('.Create.Edit .info textarea.description').value.trimEnd();
 
                             let old_name = document.querySelector('.Create.Edit').getAttribute('id');
 
