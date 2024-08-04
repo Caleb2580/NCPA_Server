@@ -2599,10 +2599,27 @@ function clickedPage() {
     document.querySelector('.main').classList.add('slid-over');
 }
 
+function unClickedPage() {
+    document.querySelector('.main').classList.remove('slid-over');
+}
+
 document.querySelector('.page').addEventListener('click', event => {
     clickedPage();
 })
 
+let menuXY = 0;
+
+document.querySelector('body').addEventListener('touchstart', event => {
+    menuXY = event.changedTouches[0].screenX;
+})
+
+document.querySelector('body').addEventListener('touchmove', event => {
+    if ((menuXY - event.changedTouches[0].screenX) > 50) {
+        clickedPage();
+    } else if ((menuXY - event.changedTouches[0].screenX) < -50) {
+        unClickedPage();
+    }
+})
 
 
 

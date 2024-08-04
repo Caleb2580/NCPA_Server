@@ -474,6 +474,7 @@ async function refund(stripe_session_id, metadata) {
           payment_intent: session.payment_intent
         });
         if (refund.status === 'succeeded') {
+            let r = (await pool.query(`INSERT INTO Log(message) VALUES("Refund issued to ${metadata.profile_id} for tournament [${metadata.tournament}] (${stripe_session_id})")`));
             console.log('Refund successful');
             return true;
         } else {
@@ -498,59 +499,59 @@ app.get('/success', async(req, res) => {
     }
 });
 
-app.get('/register-success', async(req, res) => {
-    try {
-        let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
-        if (tm.length == 0) {
-            const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+// app.get('/register-success', async(req, res) => {
+//     try {
+//         let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
+//         if (tm.length == 0) {
+//             const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
 
-            if (session.status === 'complete' && session.payment_status === 'paid') {
-                let pid = session.metadata.profile_id;
-                let tournament = session.metadata.tournament;
+//             if (session.status === 'complete' && session.payment_status === 'paid') {
+//                 let pid = session.metadata.profile_id;
+//                 let tournament = session.metadata.tournament;
 
-                let tm_old = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(tournament)}`))[0];
+//                 let tm_old = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(tournament)}`))[0];
 
-                if (tm_old.length == 0) {  // New Player
-                    // r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player, stripe_session_id) VALUES("${tournament}", ${pid}, 1, ${pool.escape(req.query.session_id)})`))[0];
+//                 if (tm_old.length == 0) {  // New Player
+//                     // r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player, stripe_session_id) VALUES("${tournament}", ${pid}, 1, ${pool.escape(req.query.session_id)})`))[0];
 
-                    if (r.affectedRows === 0) {
-                        // Refund - Something went wrong
-                        let refund_status = await refund(req.query.session_id, session.metadata);
-                        return res.redirect('/');
-                    }
-                    let params = new URLSearchParams({'t': tournament});
-                    res.redirect(`/success?${params.toString()}`);
-                } else {  // Player in tournament
-                    tm_old = tm_old[0];
-                    if (tm_old.player == 1) {  // Player already registered
-                        // Refund - Player already registered
-                        let refund_status = await refund(req.query.session_id, session.metadata);
-                        return res.redirect('/');
-                    } else {  // Captain but not player
-                        console.log('Captain but not player')
-                        // let r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament_team_member_id=${pool.escape(tm_old.tournament_team_member_id)}`))
+//                     if (r.affectedRows === 0) {
+//                         // Refund - Something went wrong
+//                         let refund_status = await refund(req.query.session_id, session.metadata);
+//                         return res.redirect('/');
+//                     }
+//                     let params = new URLSearchParams({'t': tournament});
+//                     res.redirect(`/success?${params.toString()}`);
+//                 } else {  // Player in tournament
+//                     tm_old = tm_old[0];
+//                     if (tm_old.player == 1) {  // Player already registered
+//                         // Refund - Player already registered
+//                         let refund_status = await refund(req.query.session_id, session.metadata);
+//                         return res.redirect('/');
+//                     } else {  // Captain but not player
+//                         console.log('Captain but not player')
+//                         // let r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament_team_member_id=${pool.escape(tm_old.tournament_team_member_id)}`))
                         
-                        if (r.affectedRows === 0) {
-                            // Refund - Something went wrong
-                            let refund_status = await refund(req.query.session_id, session.metadata);
-                            return res.redirect('/');
-                        }
+//                         if (r.affectedRows === 0) {
+//                             // Refund - Something went wrong
+//                             let refund_status = await refund(req.query.session_id, session.metadata);
+//                             return res.redirect('/');
+//                         }
                         
-                        let params = new URLSearchParams({'t': tournament});
-                        res.redirect(`/success?${params.toString()}`);
-                    }
-                }
+//                         let params = new URLSearchParams({'t': tournament});
+//                         res.redirect(`/success?${params.toString()}`);
+//                     }
+//                 }
                 
-            }
-        } else {  // Link used
-            res.redirect('/');
-        }
+//             }
+//         } else {  // Link used
+//             res.redirect('/');
+//         }
 
-    } catch (error) {
-        console.log(error)
-        res.redirect('/');
-    }
-});
+//     } catch (error) {
+//         console.log(error)
+//         res.redirect('/');
+//     }
+// });
 
 app.post('/api/stripe/webhook', async(req, res) => {
     let data = req.body;
