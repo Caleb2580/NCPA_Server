@@ -990,6 +990,10 @@ html, body {
         margin-left: -15em;
     }
 
+    .page .Profiles div.profile.show{
+        height: 25em;
+    }
+
     /* .page.Dashboard .stat-container {
         width: auto;
         justify-content: center;
