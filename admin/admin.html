@@ -79,6 +79,7 @@
 
                         function selectDate(event, h) {
                             event.stopPropagation();
+                            clickedPage();
                             let e = event.target;
                             if (h) {
                                 e = event.target.parentElement;
@@ -94,6 +95,7 @@
 
                         async function deleteTeam(event, tournament_team_id) {
                             event.stopPropagation();
+                            clickedPage();
                             let index = -1;
                             for (let i in tournaments.teams) {
                                 if (tournaments.teams[i].tournament_team_id == tournament_team_id) {
@@ -198,6 +200,7 @@
                                         editTeam.innerText = 'Edit';
                                         editTeam.setAttribute('onclick', `
                                             event.stopPropagation();
+                                            clickedPage();
                                             currentViewTeam = ${JSON.stringify(team)};
                                             updateViewTeam();
                                             goto(5);
@@ -445,6 +448,7 @@
                                     edit_btn.innerText = 'EDIT';
                                     edit_btn.setAttribute('onclick', `
                                         event.stopPropagation();
+                                        clickedPage();
                                         let edit_div = document.querySelector('.page .Tournaments .Create.Edit');
                                         ct = ${JSON.stringify(tournaments[type][i])};
                                         for (key in ct) {
@@ -471,6 +475,7 @@
                                     delete_btn.classList.add('delete');
                                     delete_btn.addEventListener('click', async(event) => {
                                         event.stopPropagation();
+                                        clickedPage();
                                         let name = event.target.parentElement.parentElement.querySelector('h1').innerText;
                                         
                                         let con = confirm('Are you sure you want to delete ' + name + '?');
@@ -1094,6 +1099,7 @@
                             delete_player.classList.add('delete');
                             delete_player.addEventListener('click', async(event) => {
                                 event.stopPropagation();
+                                clickedPage();
                                 let r = await fetch('/admin/delete-profile', {
                                     method: 'POST',
                                     headers: {
@@ -1342,6 +1348,13 @@
 
 </body>
 <script>
+    function clickedPage() {
+        document.querySelector('.main').classList.add('slid-over');
+    }
+
+    document.querySelector('.page').addEventListener('click', event => {
+        clickedPage();
+    })
 
     function openCloseMenu() {
         let main = document.querySelector('.main');
