@@ -458,6 +458,22 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     margin: 0;
 }
 
+.page.Dashboard .past-matches div.inner button {
+    font-family: 'Lexend Peta';
+    font-size: 1em;
+    color: rgb(250, 250, 250);
+    background-color: rgb(126, 173, 237);
+    padding: .5em 1em;
+    border: 2px solid rgb(126, 173, 237);
+    border-radius: 1em;
+    cursor: pointer;
+    transition: ease-in-out .2s;
+}
+
+.page.Dashboard .past-matches div.inner button:hover {
+    color: rgb(126, 173, 237);
+    background-color: rgb(250, 250, 250);
+}
 
 
 /* Account Info */
@@ -675,6 +691,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     overflow: hidden;
     gap: 0;
     margin-left: 0;
+    min-height: 2.2em;
 }
 
 .page.Tournaments .date-div div {

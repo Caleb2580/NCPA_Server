@@ -2356,8 +2356,20 @@ async function select(p) {
             inner.appendChild(nom);
             inner.style.height = '80%';
             past_matches_div.style.height = '100%';
+        } else if (info.past_matches.length == 6) {
+            let div = document.createElement('div');
+            div.style.backgroundColor = 'transparent';
+            div.style.height = 'auto';
+            div.style.width = '100%';
+            let view_all = document.createElement('button');
+            view_all.innerText = 'View all matches'
+            view_all.addEventListener('click', event => {
+                select('Matches')
+            })
+            div.appendChild(view_all);
+            inner.appendChild(div)
         }
-
+        
         past_matches_div.appendChild(inner);
 
         page.appendChild(past_matches_div);
