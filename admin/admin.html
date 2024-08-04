@@ -520,7 +520,7 @@
                             } else {
                                 let message = document.createElement('h1');
                                 message.innerText = "No tournaments found";
-                                message.innerText = JSON.stringify(tournaments);
+                                message.innerText = type + '<br>' + JSON.stringify(tournaments[type]);
                                 t_cont.appendChild(message);
                             }
                         }
