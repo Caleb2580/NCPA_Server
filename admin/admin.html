@@ -1412,6 +1412,8 @@
         urlParams.set('view', event.target.innerText);
         const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
+
+        clickedPage();
     }
 </script>
 </html>
