@@ -107,8 +107,8 @@ function authenticate(req, res, next) {
 
 // updateCollegeRankings();
 
-let base_url = 'http://localhost:3000';
-// let base_url = 'https://api.ncpaofficial.com'
+// let base_url = 'http://localhost:3000';
+let base_url = 'https://tournaments.ncpaofficial.com'
 
 // Routes
 
