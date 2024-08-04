@@ -392,7 +392,7 @@
                         }
 
                         function select() {
-                            let type = document.querySelector('.date-div div.selected').innerText.toLowerCase();
+                            let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trimEnd();
                             let t_cont = document.querySelector('.tournament-container');
                             t_cont.innerHTML = '';    
 
