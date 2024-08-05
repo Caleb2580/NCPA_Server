@@ -214,6 +214,19 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     cursor: pointer;
 }
 
+.menu .header div.logo {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menu .header div.logo img {
+    width: 65%;
+    cursor: pointer;
+}
+
 .menu .stuff {
     display: flex;
     justify-content: space-between;
