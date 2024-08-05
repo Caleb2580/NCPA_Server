@@ -250,7 +250,7 @@ async function setup(startup=true, back=false) {
             to_show = new_to_show;
         }
         document.querySelector('h2.college').classList.remove('show');
-        document.querySelector('h1.college').innerHTML = 'PLAYERS';
+        document.querySelector('h1.college').innerHTML = 'PLAYERS RATINGS';
         
         sorts = [1];
         for (let a = 1; a < to_show.length; a++) {
