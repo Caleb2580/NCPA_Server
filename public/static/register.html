@@ -97,11 +97,11 @@
                     </div>
                 </div>
     
-                <div class="inner">
+                <!-- <div class="inner">
                     <h3>CONNECT KEY</h3>
                     <input type="text" id="connect_key">
                     <h4>If you played in a previous tournament, please check your email for a connect key so that you can connect your account</h4>
-                </div>
+                </div> -->
 
                 <div class="inner" style="flex-direction: row;">
                     <button class="check" onclick="checkBox(event)"></button>
@@ -207,10 +207,10 @@
             }
 
             let connect_key = null;
-            let ck = document.querySelector('#connect_key').value;
-            if (ck.length > 0) {
-                connect_key = ck;
-            }
+            // let ck = document.querySelector('#connect_key').value;
+            // if (ck.length > 0) {
+            //     connect_key = ck;
+            // }
 
             fetch('/register', {
                 method: 'POST',
