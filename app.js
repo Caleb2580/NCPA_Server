@@ -553,58 +553,58 @@ app.get('/success', async(req, res) => {
 //     }
 // });
 
-    app.post('/api/stripe/webhook', async(req, res) => {
-        let data = req.body;
+app.post('/api/stripe/webhook', async(req, res) => {
+    let data = req.body;
 
-        if (data.type == 'checkout.session.completed' && data.data.object.payment_status == 'paid') {
-            try {
-                let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
-                if (tm.length == 0) {
-                    const session = req.body.data.object;
-        
-                    if (session.status === 'complete' && session.payment_status === 'paid') {
-                        let pid = session.metadata.profile_id;
-                        let tournament = session.metadata.tournament;
-        
-                        let tm_old = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(tournament)}`))[0];
-        
-                        if (tm_old.length == 0) {  // New Player
-                            r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player, stripe_session_id) VALUES("${tournament}", ${pid}, 1, ${pool.escape(session.id)})`))[0];
-        
+    if (data.type == 'checkout.session.completed' && data.data.object.payment_status == 'paid') {
+        try {
+            let tm = (await pool.query(`SELECT * FROM TournamentTeamMember WHERE stripe_session_id=${pool.escape(req.query.session_id)}`))[0];
+            if (tm.length == 0) {
+                const session = req.body.data.object;
+    
+                if (session.status === 'complete' && session.payment_status === 'paid') {
+                    let pid = session.metadata.profile_id;
+                    let tournament = session.metadata.tournament;
+    
+                    let tm_old = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(tournament)}`))[0];
+    
+                    if (tm_old.length == 0) {  // New Player
+                        r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, player, stripe_session_id) VALUES("${tournament}", ${pid}, 1, ${pool.escape(session.id)})`))[0];
+    
+                        if (r.affectedRows === 0) {
+                            // Refund - Something went wrong
+                            let refund_status = await refund(session.id, session.metadata)
+                        }
+                        let params = new URLSearchParams({'t': tournament});
+                    } else {  // Player in tournament
+                        tm_old = tm_old[0];
+                        if (tm_old.player == 1) {  // Player already registered
+                            // Refund - Player already registered
+                            let refund_status = await refund(session.id, session.metadata);
+                        } else {  // Captain but not player
+                            console.log('Captain but not player')
+                            let r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament_team_member_id=${pool.escape(tm_old.tournament_team_member_id)}`))
+                            
                             if (r.affectedRows === 0) {
-                                // Refund - Something went wrong
-                                let refund_status = await refund(session.id, session.metadata)
-                            }
-                            let params = new URLSearchParams({'t': tournament});
-                        } else {  // Player in tournament
-                            tm_old = tm_old[0];
-                            if (tm_old.player == 1) {  // Player already registered
-                                // Refund - Player already registered
                                 let refund_status = await refund(session.id, session.metadata);
-                            } else {  // Captain but not player
-                                console.log('Captain but not player')
-                                let r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE tournament_team_member_id=${pool.escape(tm_old.tournament_team_member_id)}`))
-                                
-                                if (r.affectedRows === 0) {
-                                    let refund_status = await refund(session.id, session.metadata);
-                                }
                             }
                         }
-                        
                     }
-                } else {  // Link used
-                    // res.redirect('/');
+                    
                 }
-        
-            } catch (error) {
-                console.log(error)
+            } else {  // Link used
                 // res.redirect('/');
             }
+    
+        } catch (error) {
+            console.log(error)
+            // res.redirect('/');
         }
+    }
 
-        res.status(200).send('Webhook received');
-        
-    })
+    res.status(200).send('Webhook received');
+    
+})
 
 
 // Admin
@@ -750,7 +750,12 @@ app.get('/admin/get-tournaments', authenticate, async(req, res) => {
         `))[0];
 
         let teams = (await pool.query(`
-            SELECT * FROM TournamentTeam;
+            SELECT
+                TT.*,
+                GROUP_CONCAT(CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) SEPARATOR ';;') as team_members
+            FROM TournamentTeam TT
+            LEFT JOIN TournamentTeamMember TTM ON TT.tournament_team_id=TTM.tournament_team_id
+            GROUP BY TT.tournament_team_id
         `))[0];
 
         let tournaments = {'current': current, 'past': past, 'upcoming': upcoming, 'tbd': tbd, 'teams': teams};

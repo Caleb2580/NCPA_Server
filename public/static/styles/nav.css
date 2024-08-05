@@ -226,10 +226,10 @@ div.footer div.social-media>h1 span {
     font-size: .7em;
     font-weight: 600;
     text-decoration: none;
-    padding: 1em 0;
+    padding: 1em .5em;
     margin: 0;
     text-align: center;
-    width: 100%;
+    width: calc(100% - 1em);
 }
 
 .hidden-menu a:hover {

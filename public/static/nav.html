@@ -3,9 +3,9 @@
     <img src="/NCPA_logo.png" alt="">
 </div>
 <div class="right">
-    <a href="/players">PLAYERS</a>
+    <a href="/players">PLAYER RATINGS</a>
     <p>|</p>
-    <a href="/colleges">COLLEGES</a>
+    <a href="/colleges">UNIVERSITY RANKINGS<a>
     <p>|</p>
     <a href="/login" class="login">LOG IN</a>
     <h1 onclick="hiddenMenu()">&#9776;</h1>
@@ -13,16 +13,11 @@
 
 <div class="hidden-menu">
     <a href="/login" class="login">LOG IN</a>
-    <a href="/players">PLAYERS</a>
-    <a href="/colleges">COLLEGES</a>
+    <a href="/players">PLAYER RATINGS</a>
+    <a href="/colleges">UNIVERSITY RANKINGS</a>
 </div>
 
 <script>
-
-    function detectSafari() {
-        if (navigator.platform.toLowerCase().includes('mac') && (navigator.userAgent.toLowerCase().includes('safari') && !navigator.userAgent.toLowerCase().includes('chrome')))
-            alert("Please note: This website may not display as intended and certain features might not function correctly in Safari. For the best experience, we recommend using a different browser.");
-    }
     
     async function setup() {
         let me = await fetch('/api/logged-in').then(res => res.json());
@@ -33,7 +28,6 @@
                 login.setAttribute('href', '/dashboard');
             });
         }
-        detectSafari();
     }
 
     setup();
