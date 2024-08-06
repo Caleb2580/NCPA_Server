@@ -556,6 +556,7 @@
         if (search.length == 0 && !typing) {
             let page = document.querySelector('.page>div.Profiles');
             page.innerHTML = '';
+            page.scrollTo(0, 0);
 
             let page_title = document.createElement('h1');
             page_title.innerText = 'Profiles';
@@ -1323,6 +1324,7 @@
             div.classList.remove('show');
         });
         let order = document.querySelector('.page .Tournaments>h5');
+        document.querySelector('.page').scrollTo(0, 0);
         if (index == 0) {
             order.innerHTML = '';
             document.querySelector('.List').classList.add('show');
@@ -1580,6 +1582,7 @@
         urlParams.set('view', event.target.innerText);
         const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
+        document.querySelector('.page').scrollTo(0, 0);
 
         clickedPage();
     }

@@ -538,6 +538,7 @@ function selectD() {
     let type = document.querySelector('.date-div div.selected').innerText.toLowerCase().trimEnd();
     let t_cont = document.querySelector('.page.Tournaments .tournament-container');
     t_cont.innerHTML = '';
+    document.querySelector('.page').scrollTo(0, 0);
 
     if (type in tournaments && tournaments[type].length > 0) {
         for (i in tournaments[type]) {
@@ -1277,6 +1278,7 @@ function viewTournament(t_name, loner=false) {
 
     let page = document.querySelector('.page.Tournaments');
     page.innerHTML = '';
+    page.scrollTo(0, 0);
 
     let t_view = document.createElement('div');
     t_view.classList.add('t-view');
@@ -2268,6 +2270,7 @@ function manage(t_name, t_manage, action=null) {
 function manageTournament(t_name, action=null) {
     document.querySelector('.loading').classList.remove('hide');
     currentViewTournament = getTournament(t_name);
+    document.querySelector('.page').scrollTo(0, 0);
 
     let ttm = playerRegisteredForTournament(currentViewTournament.name);
     if (ttm.captain == 0) {
