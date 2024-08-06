@@ -568,7 +568,7 @@ function selectD() {
                 let venue_address = document.createElement('h3');
                 venue_address.innerText = tournaments[type][i].venue_address;
                 venue_address.setAttribute('onclick', `
-                    window.open('https://www.google.com/maps/place/' + encodeURIComponent(${tournaments[type][i].venue_address}))
+                    window.open('https://www.google.com/maps/place/' + encodeURIComponent("${tournaments[type][i].venue_address}"))
                 `)
                 t.appendChild(venue_address);
             }
