@@ -745,7 +745,7 @@
         }
     }
 
-    setupProfiles();
+    // setupProfiles();
                         
     let tournaments = {};
     let currentViewTournament = {};
@@ -1476,7 +1476,8 @@
         select();
     }
 
-    tournament_setup();
+    
+    setupProfiles().then(() => tournament_setup());
 </script>
 <script>
     async function removePlayerFromTeam(event, t_name, team_name, pid) {
