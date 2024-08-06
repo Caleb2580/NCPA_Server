@@ -176,7 +176,6 @@ async function getTournaments() {
             ts[type][i]['requests'] = [];
         }
     }
-
     for (let i in ts['teams']) {
         let broke = false;
         for (let type in ts) {
@@ -185,7 +184,20 @@ async function getTournaments() {
             }
             for (let q in ts[type]) {
                 if (ts[type][q].name == ts['teams'][i].tournament_name) {
-                    ts[type][q]['team_names'] = ts['teams'][i]['team_names'].split(' ;; ');
+                    if (ts[type][q].teams == null)
+                        ts[type][q].teams = {};
+                    ts[type][q].teams[ts.teams[i].name] = ts.teams[i];
+                    if (ts.teams[i].team_members != null) {
+                        ts[type][q].teams[ts.teams[i].name].team_members = ts[type][q].teams[ts.teams[i].name].team_members.split(';;');
+                        let ms = [];
+                        for (let tm in ts[type][q].teams[ts.teams[i].name].team_members) {
+                            ms.push(getPlayer(parseInt(ts[type][q].teams[ts.teams[i].name].team_members[tm])));
+                        }
+                        ts[type][q].teams[ts.teams[i].name].team_members = ms;
+                    } else {
+                        ts[type][q].teams[ts.teams[i].name].team_members = [];
+                    }
+                    // ts[type][q]['team_names'] = ts['teams'][i]['team_names'].split(' ;; ');
                     broke = true;
                     break;
                 }
@@ -497,6 +509,21 @@ function playerRegisteredForTournament(t_name) {
     return null;
 }
 
+function playerOnATeam(t_name, pid) {
+    for (let i in info.player_tournaments) {
+        if (info.player_tournaments[i].tournament === t_name) {
+            for (let tm in info.player_tournaments[i].teams) {
+                for (let p in info.player_tournaments[i].teams[tm]) {
+                    if (info.player_tournaments[i].teams[tm][p].profile_id == pid) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 function getTournament(t_name) {
     for (let type in tournaments) {
         for (let i in tournaments[type]) {
@@ -540,9 +567,9 @@ function selectD() {
             if (tournaments[type][i].venue_address != null) {
                 let venue_address = document.createElement('h3');
                 venue_address.innerText = tournaments[type][i].venue_address;
-                venue_address.addEventListener('click', event => {
-                    window.open('https://www.google.com/maps/place/' + encodeURIComponent(tournaments[type][i].venue_address))
-                })
+                venue_address.setAttribute('onclick', `
+                    window.open('https://www.google.com/maps/place/' + encodeURIComponent(${tournaments[type][i].venue_address}))
+                `)
                 t.appendChild(venue_address);
             }
             
@@ -598,7 +625,7 @@ function selectD() {
                         view.innerText = 'Join Team';
                         view.classList.add('join');
                     } else {
-                        view.innerText = 'View';
+                        view.innerText = 'Team';
                     }
 
                     // view.innerText = 'View';
@@ -630,13 +657,35 @@ function selectD() {
                             document.querySelector('.alert-screen .register').classList.add('show');
                         document.querySelector('.alert-screen .register').setAttribute('id', "reg_${tournaments[type][i].name}")
                     `);
-                    
                     tools.appendChild(register);
+
+                    tool_counter += 1;
+                }
+                if (player_tournament.player + player_tournament.captain > 0) {
+                    let view_all_teams = document.createElement('button');
+                    view_all_teams.innerText = 'Info';
+                    view_all_teams.setAttribute('onclick', `
+                        viewTournament("${player_tournament.tournament}", loner=true);
+                    `);
+                    tools.appendChild(view_all_teams);
                     tool_counter += 1;
                 }
             }
             if (tool_counter > 0)
                 t.appendChild(tools);
+
+            
+            let t_info = document.createElement('div');
+            t_info.classList.add('tools');
+            let n_teams = document.createElement('h4');
+            n_teams.innerText = tournaments[type][i].num_teams + (tournaments[type][i].num_teams == 1 ? ' Team' : ' Teams');
+            t_info.appendChild(n_teams);
+            if (tournaments[type][i].num_players >= 60) {
+                let n_players = document.createElement('h4');
+                n_players.innerText = tournaments[type][i].num_players + (tournaments[type][i].num_players == 1 ? ' Player' : ' Players');
+                t_info.appendChild(n_players);
+            }
+            t.appendChild(t_info);
             
             t_cont.appendChild(t);
         }
@@ -939,7 +988,7 @@ async function deletePlayerFromEvent(team, et, pl) {
     document.querySelector('.loading').classList.add('hide');
 }
 
-function viewLoner(t_name, t_view) {
+function viewLoner(t_name, t_view, loner=true) {
     let header = document.createElement('div');
     header.classList.add('header');
 
@@ -983,7 +1032,7 @@ function viewLoner(t_name, t_view) {
 
         let teams_counter = 0;
 
-        currentViewTournament.team_names.forEach(team => {
+        for (let team in currentViewTournament.teams) {
             teams_counter += 1;
             let team_d = document.createElement('div');
             team_d.classList.add('team');
@@ -992,30 +1041,84 @@ function viewLoner(t_name, t_view) {
             team_span.innerText = team;
             team_d.appendChild(team_span)
 
-            let options = document.createElement('div');
-            options.classList.add('options');
+            if (loner == true) {
+                let options = document.createElement('div');
+                options.classList.add('options');
 
-            let count = 0;
-            if (!requestExists(currentViewTournament.name, team)) {
-                let send = document.createElement('button');
-                send.innerText = 'Request';
-                send.setAttribute('onclick', `sendTeamRequest(event, "${currentViewTournament.name}", "${team}", 1)`);
-                options.appendChild(send);
-                count += 1;
+                let count = 0;
+                if (!requestExists(currentViewTournament.name, team)) {
+                    let send = document.createElement('button');
+                    send.innerText = 'Request';
+                    send.setAttribute('onclick', `sendTeamRequest(event, "${currentViewTournament.name}", "${team}", 1)`);
+                    options.appendChild(send);
+                    count += 1;
+                } else {
+                    let cancel = document.createElement('button');
+                    cancel.innerText = 'Cancel';
+                    cancel.classList.add('cancel');
+                    cancel.setAttribute('onclick', `sendTeamRequest(event, "${currentViewTournament.name}", "${team}", 0)`);
+                    options.appendChild(cancel);
+                    count += 1;
+                }
+                
+                if (count > 0)
+                    team_d.appendChild(options);
             } else {
-                let cancel = document.createElement('button');
-                cancel.innerText = 'Cancel';
-                cancel.classList.add('cancel');
-                cancel.setAttribute('onclick', `sendTeamRequest(event, "${currentViewTournament.name}", "${team}", 0)`);
-                options.appendChild(cancel);
-                count += 1;
-            }
-            
-            if (count > 0)
+                team_d.addEventListener('click', event => {
+                    let e = event.target;
+                    while (!e.classList.contains('team')) {
+                        e = e.parentElement;
+                    }
+                    if (e.classList.contains('dropped')) {
+                        e.classList.remove('dropped');
+                        e.style.maxHeight = '1em';
+                    } else {
+                        e.classList.add('dropped');
+                        let bottom_height = e.querySelector('.bottom').scrollHeight;
+                        if (bottom_height > 0) {
+                            e.style.maxHeight = `calc(3em + ${bottom_height}px)`;
+                        }
+                    }
+                })
+                team_d.classList.add('to_drop')
+
+                let options = document.createElement('div');
+                options.classList.add('options');
+
+                let drop = document.createElement('button');
+                drop.classList.add('drop');
+
+                options.appendChild(drop);
+
                 team_d.appendChild(options);
 
+                // Players
+                let bottom = document.createElement('div');
+                bottom.classList.add('bottom');
+
+                for (let p in currentViewTournament.teams[team].team_members) {
+                    let p_btn = document.createElement('button');
+                    console.log(currentViewTournament.teams[team].team_members[p])
+                    p_btn.innerText = currentViewTournament.teams[team].team_members[p].first_name + ' ' + currentViewTournament.teams[team].team_members[p].last_name;
+                    let params = new URLSearchParams({'search': currentViewTournament.teams[team].team_members[p].first_name + ' ' + currentViewTournament.teams[team].team_members[p].last_name, 'gender': currentViewTournament.teams[team].team_members[p].gender});
+                    p_btn.setAttribute('onclick', `
+                        window.open("/player-ratings?${params.toString()}")
+                    `);
+                    bottom.appendChild(p_btn);
+                }
+
+                if (currentViewTournament.teams[team].team_members.length == 0) {
+                    let span = document.createElement('span');
+                    span.innerText = 'No players registered yet';
+                    span.style.fontSize = '.8em';
+                    bottom.appendChild(span)
+                }
+
+                team_d.appendChild(bottom);
+            }
+
             main.appendChild(team_d);
-        })
+        }
 
         if (teams_counter == 0) {
             let none = document.createElement('h1');
@@ -1145,7 +1248,7 @@ function viewTeam(t_view) {
             viewPlayer.innerText = 'View';
             let params = new URLSearchParams({'search': player.first_name + ' ' + player.last_name, 'gender': player.gender});
             viewPlayer.setAttribute('onclick', `
-                window.open("/players?${params.toString()}")
+                window.open("/player-ratings?${params.toString()}")
             `);
             options.appendChild(viewPlayer);
             count += 1;
@@ -1168,7 +1271,7 @@ function viewTeam(t_view) {
 
 }
 
-function viewTournament(t_name) {
+function viewTournament(t_name, loner=false) {
     document.querySelector('.loading').classList.remove('hide');
     currentViewTournament = getTournament(t_name);
 
@@ -1191,7 +1294,9 @@ function viewTournament(t_name) {
 
     let ttm = playerRegisteredForTournament(currentViewTournament.name);
     
-    if (ttm.tournament_team_id == null) {
+    if (loner) {
+        viewLoner(t_name, t_view, false);
+    } else if (ttm.tournament_team_id == null) {
         viewLoner(t_name, t_view);
     } else {
         viewTeam(t_view);
@@ -1200,6 +1305,55 @@ function viewTournament(t_name) {
 
 
 }
+
+// function viewTournamentTeams(t_name) {
+//     document.querySelector('.loading').classList.remove('hide');
+//     currentViewTournament = getTournament(t_name);
+
+//     let page = document.querySelector('.page.Tournaments');
+//     page.innerHTML = '';
+
+//     let t_view = document.createElement('div');
+//     t_view.classList.add('t-view');
+    
+//     let back = document.createElement('button');
+//     back.innerText = '< Back';
+//     back.classList.add('back')
+//     back.addEventListener('click', () => {
+//         select('Tournaments');
+//     });
+
+
+//     let teams_counter = 0;
+//     for (let tm in currentViewTournament.teams) {
+//         teams_counter += 1;
+//         let team_d = document.createElement('div');
+//         team_d.classList.add('team');
+
+//         let team_span = document.createElement('span');
+//         team_span.innerText = tm;
+//         team_d.appendChild(team_span)
+
+//         // let options = document.createElement('div');
+//         // options.classList.add('options');
+
+//         // let send = document.createElement('button');
+//         // send.innerText = 'Request';
+//         // send.setAttribute('onclick', `sendTeamRequest(event, "${currentViewTournament.name}", "${team}", 1)`);
+//         // options.appendChild(send);
+        
+//         // if (count > 0)
+//         //     team_d.appendChild(options);
+        
+//         t_view.appendChild(team_d)
+//     }
+
+    
+//     page.appendChild(back);
+//     page.appendChild(t_view);
+
+//     document.querySelector('.loading').classList.add('hide');
+// }
 
 function manage(t_name, t_manage, action=null) {
     let header = document.createElement('div');

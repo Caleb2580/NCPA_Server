@@ -691,6 +691,12 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     cursor: pointer;
 }
 
+.page.Tournaments .tournament-container>div h4 {
+    font-size: .7em;
+    font-weight: 600;
+    margin: 0;
+}
+
 .page.Tournaments .date-div {
     border-radius: 2em;
     margin: 0;
@@ -885,6 +891,7 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     background-color: rgb(250, 250, 250);
     cursor: pointer;
     width: calc(100% - 2em);
+    overflow: hidden;
     text-align: left;
     padding: 1em 1em;
     border: 2px solid rgb(250, 250, 250);
@@ -895,8 +902,16 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: .8em;
+    gap: .5em;
 }
+
+.page.Tournaments .t-view .main-view div.team.to_drop {
+    max-height: 1em;
+}
+
+/* .page.Tournaments .t-view .main-view div.team.dropped {
+    max-height: 5em;
+} */
 
 .page.Tournaments .t-view .main-view div.team:hover {
     box-shadow: 0 0 5px rgba(0, 0, 0, 0);
@@ -954,6 +969,37 @@ box-shadow:0 0 20px  rgb(250, 250, 250);
 .page.Tournaments .t-view .main-view div.team button.accept:hover {
     color: rgb(110, 170, 117);
     background-color: rgb(250, 250, 250);
+}
+
+.page.Tournaments .t-view .main-view div.team button.drop {
+    background-image: url('drop_down.png');
+    background-size: cover;
+    background-position: center;
+    background-color: transparent;
+    border: none;
+    width: 1.5em;
+    height: 1.5em;
+    transition: ease-in-out .2s;
+}
+
+.page.Tournaments .t-view .main-view div.team.dropped button.drop {
+    -webkit-transform: scaleY(-1);
+    transform: scaleY(-1);
+}
+
+.page.Tournaments .t-view .main-view div.team .bottom {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1em;
+    opacity: 0;
+    transition: ease-in-out .2s;
+}
+
+.page.Tournaments .t-view .main-view div.team.dropped .bottom {
+    opacity: 1;
 }
 
 .page.Tournaments .t-view .main-view .tools {

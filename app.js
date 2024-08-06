@@ -119,11 +119,11 @@ app.get('/', async(req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'static', 'home.html'))
 })
 
-app.get('/players', async(req, res) => {
+app.get('/player-ratings', async(req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'static', 'players.html'))
 })
 
-app.get('/colleges', async (req, res) => {
+app.get('/university-rankings', async (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'static', 'colleges.html'))
 })
 
@@ -752,7 +752,7 @@ app.get('/admin/get-tournaments', authenticate, async(req, res) => {
         let teams = (await pool.query(`
             SELECT
                 TT.*,
-                GROUP_CONCAT(CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) SEPARATOR ';;') as team_members
+                GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) SEPARATOR ';;') as team_members
             FROM TournamentTeam TT
             LEFT JOIN TournamentTeamMember TTM ON TT.tournament_team_id=TTM.tournament_team_id
             GROUP BY TT.tournament_team_id
@@ -1092,7 +1092,7 @@ app.get('/api/logged-in', async(req, res) => {
 
 app.get('/api/get-tournaments', async(req, res) => {
     try {
-        let to_grab = 'name, venue, venue_address, registration_open, registration_close, begin_date, end_date, description';
+        let to_grab = 'T.name, T.venue, T.venue_address, T.registration_open, T.registration_close, T.begin_date, T.end_date, T.description';
 
         let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
 
@@ -1103,41 +1103,70 @@ app.get('/api/get-tournaments', async(req, res) => {
         
         let r = await Promise.all([
             await pool.query(`
-                SELECT ${to_grab}
-                FROM Tournament
+                SELECT 
+                    ${to_grab},
+                    COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                    COUNT(TTM.tournament) AS num_players
+                FROM Tournament T
+                LEFT JOIN
+                    TournamentTeam TT ON T.name = TT.tournament
+                LEFT JOIN
+                    TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
                 WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
                 AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                GROUP BY ${to_grab}
                 ORDER BY begin_date DESC;
             `),
 
             await pool.query(`
-                SELECT ${to_grab}
-                FROM Tournament
+                SELECT ${to_grab}, COUNT(DISTINCT TT.tournament_team_id) AS num_teams, COUNT(TTM.tournament) AS num_players
+                FROM Tournament T
+                LEFT JOIN
+                    TournamentTeam TT ON T.name = TT.tournament
+                LEFT JOIN
+                    TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
                 WHERE end_date < DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                GROUP BY ${to_grab}
                 ORDER BY begin_date DESC;
             `),
 
             await pool.query(`
-                SELECT ${to_grab}
-                FROM Tournament
+                SELECT ${to_grab}, COUNT(DISTINCT TT.tournament_team_id) AS num_teams, COUNT(TTM.tournament) AS num_players
+                FROM Tournament T
+                LEFT JOIN
+                    TournamentTeam TT ON T.name = TT.tournament
+                LEFT JOIN
+                    TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
                 WHERE begin_date > DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+                GROUP BY ${to_grab}
                 ORDER BY begin_date ASC;
             `),
             
+            // await pool.query(`
+            //     SELECT
+            //         T.name AS tournament_name,
+            //         GROUP_CONCAT(TT.name SEPARATOR ' ;; ') AS team_names
+            //     FROM TournamentTeamMember TTM
+            //     JOIN Tournament T ON TTM.tournament = T.name
+            //     JOIN TournamentTeam TT ON TT.tournament = T.name
+            //     WHERE TTM.profile_id = ${user.profile_id}
+            //     GROUP BY T.name
+            // `),
             await pool.query(`
                 SELECT
+                    TT.tournament_team_id,
+                    TT.name,
+                    TT.points,
+                    TT.placement,
                     T.name AS tournament_name,
-                    GROUP_CONCAT(TT.name SEPARATOR ' ;; ') AS team_names
-                FROM TournamentTeamMember TTM
-                JOIN Tournament T ON TTM.tournament = T.name
-                JOIN TournamentTeam TT ON TT.tournament = T.name
-                WHERE TTM.profile_id = ${user.profile_id}
-                GROUP BY T.name
-            `),
-
+                    GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id, ':', TTM.player, ':', TTM.captain) SEPARATOR ';;') as team_members
+                FROM TournamentTeam TT
+                LEFT JOIN TournamentTeamMember TTM ON TT.tournament_team_id=TTM.tournament_team_id AND TTM.player=1
+                LEFT JOIN Tournament T ON TT.tournament = T.name
+                GROUP BY TT.tournament_team_id, T.name
+            `)
         ]);
-
-
+        
         let current = r[0][0];
         let past = r[1][0];
         let upcoming = r[2][0];
@@ -1318,9 +1347,13 @@ app.post('/api/remove-player-from-team', async(req, res) => {
             JOIN TournamentTeam TT ON TTM.tournament_team_id=TT.tournament_team_id
             WHERE TTM.tournament=${pool.escape(req.body.t_name)} AND TT.name=${pool.escape(req.body.team_name)} AND TTM.profile_id=${user.profile_id}
         `))[0][0];
+        
+        let profile = (await pool.query(`SELECT permission FROM Profile WHERE profile_id=${user.profile_id}`))[0][0];
 
-        if (tm.captain === 0) {
-            return res.send({'success': false, 'error': 'Something went wrong'});
+        if (profile.permission != 5) {
+            if (tm == null || tm.captain === 0) {
+                return res.send({'success': false, 'error': 'Something went wrong'});
+            }  
         }
 
         let r = (await pool.query(`
@@ -1340,7 +1373,7 @@ app.post('/api/remove-player-from-team', async(req, res) => {
             let tm = (await pool.query(`
                 SELECT captain, player, tournament_team_member_id FROM TournamentTeamMember WHERE tournament=${pool.escape(req.body.t_name)} AND profile_id=${pool.escape(req.body.pid)}; 
             `))[0][0];
-            if (tm.player == 0 && tm.captain == 0) {
+            if (tm == null || (tm.player == 0 && tm.captain == 0)) {
                 r = (await pool.query(`DELETE FROM TournamentTeamMember WHERE tournament_team_member_id=${pool.escape(tm.tournament_team_member_id)}`))[0];
             }
             if (r.affectedRows == 0) {
@@ -1372,7 +1405,7 @@ app.post('/api/change-request-status', async(req, res) => {
             WHERE TTM.tournament=${pool.escape(req.body.t_name)} AND TT.tournament_team_id=${pool.escape(req.body.team_id)} AND TTM.profile_id=${user.profile_id}
         `))[0][0];
 
-        if (tm.captain === 0) {
+        if (tm == null || tm.captain === 0) {
             return res.send({'success': false, 'error': 'Something went wrong'});
         }
 
