@@ -1106,7 +1106,7 @@ app.get('/api/get-tournaments', async(req, res) => {
                 SELECT 
                     ${to_grab},
                     COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
-                    COUNT(TTM.tournament) AS num_players
+                    COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players
                 FROM Tournament T
                 LEFT JOIN
                     TournamentTeam TT ON T.name = TT.tournament
@@ -1119,7 +1119,10 @@ app.get('/api/get-tournaments', async(req, res) => {
             `),
 
             await pool.query(`
-                SELECT ${to_grab}, COUNT(DISTINCT TT.tournament_team_id) AS num_teams, COUNT(TTM.tournament) AS num_players
+                SELECT
+                    ${to_grab},
+                    COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                    COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players
                 FROM Tournament T
                 LEFT JOIN
                     TournamentTeam TT ON T.name = TT.tournament
@@ -1131,7 +1134,10 @@ app.get('/api/get-tournaments', async(req, res) => {
             `),
 
             await pool.query(`
-                SELECT ${to_grab}, COUNT(DISTINCT TT.tournament_team_id) AS num_teams, COUNT(TTM.tournament) AS num_players
+                SELECT
+                    ${to_grab},
+                    COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                    COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players
                 FROM Tournament T
                 LEFT JOIN
                     TournamentTeam TT ON T.name = TT.tournament
