@@ -2505,7 +2505,7 @@ async function resetTournaments(colleges=true) {
 
 async function getPlayers(to_grab=[]) {  // first_name, last_name, singles_rating, games_played
     to_grab = to_grab.concat(['profile_id', 'first_name', 'last_name', 'college', 'gender', 'division', 'singles_games_played', 'doubles_games_played', 'mixed_doubles_games_played', 'wins', 'losses', 'singles_rating', 'doubles_rating', 'mixed_doubles_rating']);
-    let players = await pool.query('SELECT ' + to_grab.join(', ') + ' FROM Profile ORDER BY last_name ASC');
+    let players = await pool.query('SELECT ' + to_grab.join(', ') + ' FROM Profile ORDER BY profile_id ASC');
     return players[0];
 }
 
