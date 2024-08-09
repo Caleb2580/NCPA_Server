@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 const multer = require('multer');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_KEY);
+const nodemailer = require('nodemailer');
 
 // BCRYPT
 const bcrypt = require('bcrypt');
@@ -19,11 +20,47 @@ const saltRounds = 10;
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+let base_url = 'http://localhost:3000';
+// let base_url = 'https://tournaments.ncpaofficial.com'
+
+let maintenance_mode = false;
+
+
+// Password stuff
 async function hashPassword(pwd) {
     return (await bcrypt.hash(pwd, saltRounds));
 }
 async function comparePassword(pwd, enc) {
     return bcrypt.compare(pwd, enc);
+}
+
+
+// Forgot password -> Email
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.EMAIL_EMAIL,
+        pass: process.env.EMAIL_GOOGLEPASSWORD
+    }
+})
+
+async function sendPasswordResetEmail(email, resetURL) {
+    const mailOptions = {
+        from: process.env.EMAIL_EMAIL,
+        to: email,
+        subject: 'NCPA Password Reset',
+        html: `Click here to reset your password: ${resetURL}`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.log('Error sending mail: ', error);
+        return false;
+    }
 }
 
 
@@ -104,11 +141,6 @@ function authenticate(req, res, next) {
         }
     }
 }
-
-// updateCollegeRankings();
-
-// let base_url = 'http://localhost:3000';
-let base_url = 'https://tournaments.ncpaofficial.com'
 
 // Routes
 
@@ -250,6 +282,62 @@ app.post('/register', async(req, res) => {
     //     res.send({'success': false});
     // }
 });
+
+app.get('/forgot-password', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'forgot-password.html'))
+})
+
+app.post('/forgot-password', async(req, res) => {
+    try {
+        let email = req.body.email.trimEnd();
+        if (!(email.length > 0 && req.body.email.includes('@'))) {
+            throw new Error('');
+        }
+        let r = (await pool.query(`SELECT profile_id FROM Profile WHERE email=${pool.escape(email)}`))[0];
+        if (r.length == 0) {
+            return res.send({'success': false, 'error': 'Sorry we couldn\'t find an acccount associated with that email address'})
+        }
+        fp = {email: email};
+        const token = jwt.sign(fp, JWT_SECRET, {expiresIn: '1h'});
+        const urlParams = new URLSearchParams({'reset-token': token});
+        let sent = await sendPasswordResetEmail(req.body.email, `${base_url}/reset-password?reset-token=${urlParams.toString()}`)
+        if (sent == false) {
+            throw new Error('');
+        }
+        return res.send({'success': true});
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
+
+app.get('/reset-password', async(req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'static', 'reset-password.html'))
+})
+
+app.post('/reset-password', async(req, res) => {
+    try {
+        let new_password = req.body.password.trimEnd();
+        if (new_password.length < 6) {
+            return res.send({'success': false, 'error': 'Your password must have at least 6 characters'});
+        }
+        new_password = await hashPassword(new_password);
+        let token = req.body.token.trimEnd();
+        let email = jwt.verify(token, JWT_SECRET);
+        if (email != null) {
+            email = email.email;
+        }
+        
+        let r = (await pool.query(`UPDATE Profile SET pass=${pool.escape(new_password)} WHERE email=${pool.escape(email)}`))[0];
+
+        if (r.affectedRows == 0) {
+            return res.send({'success': false, 'error': 'Sorry, we can\'t find an email associated with that account'});
+        }
+
+        return res.send({'success': true});
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+})
 
 app.get('/dashboard', async(req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'static', 'profile.html'));
@@ -725,28 +813,64 @@ app.post('/admin/create-tournament-team', authenticate, async(req, res) => {
 app.get('/admin/get-tournaments', authenticate, async(req, res) => {
     try {
         let current = (await pool.query(`
-            SELECT *
-            FROM Tournament
+            SELECT 
+                T.*,
+                COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players,
+                GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id) SEPARATOR ';;') AS players
+            FROM Tournament T
+            LEFT JOIN
+                TournamentTeam TT ON T.name = TT.tournament
+            LEFT JOIN
+                TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
             WHERE begin_date <= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
             AND end_date >= DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            GROUP BY T.name
             ORDER BY begin_date DESC;
         `))[0];
         let past = (await pool.query(`
-            SELECT *
-            FROM Tournament
+            SELECT 
+                T.*,
+                COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players,
+                GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id) SEPARATOR ';;') AS players
+            FROM Tournament T
+            LEFT JOIN
+                TournamentTeam TT ON T.name = TT.tournament
+            LEFT JOIN
+                TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
             WHERE end_date < DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            GROUP BY T.name
             ORDER BY begin_date DESC;
         `))[0];
         let upcoming = (await pool.query(`
-            SELECT *
-            FROM Tournament
+            SELECT 
+                T.*,
+                COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players,
+                GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id) SEPARATOR ';;') AS players
+            FROM Tournament T
+            LEFT JOIN
+                TournamentTeam TT ON T.name = TT.tournament
+            LEFT JOIN
+                TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
             WHERE begin_date > DATE(CONVERT_TZ(NOW(), @@session.time_zone, 'America/Chicago'))
+            GROUP BY T.name
             ORDER BY begin_date ASC;
         `))[0];
         let tbd = (await pool.query(`
-            SELECT *
-            FROM Tournament
-            WHERE begin_date IS NULL OR end_date IS NULL;
+            SELECT 
+                T.*,
+                COUNT(DISTINCT TT.tournament_team_id) AS num_teams,
+                COUNT(DISTINCT TTM.tournament_team_member_id) AS num_players,
+                GROUP_CONCAT(DISTINCT CONCAT(TTM.profile_id) SEPARATOR ';;') AS players
+            FROM Tournament T
+            LEFT JOIN
+                TournamentTeam TT ON T.name = TT.tournament
+            LEFT JOIN
+                TournamentTeamMember TTM on T.name = TTM.tournament AND TTM.player = 1
+            WHERE begin_date IS NULL OR end_date IS NULL
+            GROUP BY T.name
         `))[0];
 
         let teams = (await pool.query(`
@@ -920,7 +1044,7 @@ app.post('/admin/update-college-rankings', authenticate, async(req, res) => {
     } catch (error) {
         return res.send({'success': false, 'error': 'Something went wrong'});
     }
-})
+});
 
 app.post('/admin/delete-profile', authenticate, async(req, res) => {
     try {
@@ -933,7 +1057,76 @@ app.post('/admin/delete-profile', authenticate, async(req, res) => {
     } catch (error) {
         return res.send({'success': false, 'error': 'Something went wrong'});
     }
+});
+
+app.post('/admin/add-player-to-tournament', authenticate, async(req, res) => {
+    try {
+        let pid = req.body.pid;
+        let t_name = req.body.t_name;
+
+        let r = (await pool.query(`SELECT player FROM TournamentTeamMember WHERE tournament=${pool.escape(t_name)} AND profile_id=${pool.escape(pid)}`))[0];
+
+        if (r.length > 0) {
+            if (r[0].player == 1)
+                return res.send({'success': false, 'error': 'Player is already registered for this tournament'});
+            r = (await pool.query(`UPDATE TournamentTeamMember SET player=1 WHERE profile_id=${pool.escape(pid)} AND tournament=${pool.escape(t_name)}`))[0];
+            if (r.affectedRows == 0) {
+                throw new Error('');
+            }
+            return res.send({'success': true});
+        }
+
+        r = (await pool.query(`INSERT INTO TournamentTeamMember(tournament, profile_id, captain, player) VALUES(${pool.escape(t_name)}, ${pool.escape(pid)}, 0, 1)`))[0];
+        
+        if (r.affectedRows == 0) {
+            return res.send({'success': false, 'error': 'Something went wrong'});
+        }
+        return res.send({'success': true});
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+
+});
+
+app.post('/admin/remove-player-from-tournament', authenticate, async(req, res) => {
+    try {
+        let pid = req.body.pid;
+        let t_name = req.body.t_name;
+
+        let r = (await pool.query(`SELECT tournament_team_member_id, player, captain FROM TournamentTeamMember WHERE tournament=${pool.escape(t_name)} AND profile_id=${pool.escape(pid)}`))[0];
+
+        if (r.length > 0) {
+            if (r[0].player == 0)
+                return res.send({'success': false, 'error': 'That player is not registered for this tournament'});
+            
+            if (r[0].captain == 0) {
+                r = (await pool.query(`DELETE FROM TournamentTeamMember WHERE tournament_team_member_id=${r[0].tournament_team_member_id}`))[0];
+            } else {
+                r = (await pool.query(`UPDATE TournamentTeamMember SET player=0 WHERE tournament_team_member_id=${r[0].tournament_team_member_id}`))[0];
+            }
+            
+            if (r.affectedRows == 0) {
+                throw new Error('');
+            }
+            return res.send({'success': true});
+        }
+
+        return res.send({'success': false, 'error': 'That player is not registered for this tournament'});
+    } catch (error) {
+        return res.send({'success': false, 'error': 'Something went wrong'});
+    }
+
+});
+
+app.get('/admin/maintenance-status', authenticate, async(req, res) => {
+    res.send({'maintenance_mode': maintenance_mode});
 })
+
+app.get('/admin/switch-maintenance-status', authenticate, async(req, res) => {
+    maintenance_mode = !maintenance_mode;
+    res.send({'maintenance_mode': maintenance_mode});
+})
+
 
 // API
 app.post('/api/edit-profile', async(req, res) => {
@@ -972,7 +1165,7 @@ app.post('/api/edit-profile', async(req, res) => {
     } catch (error) {
         return res.send({'success': false, 'error': 'Something went wrong'});
     }
-})
+});
 
 app.post('/api/simulator', async(req, res) => {
     try {
@@ -982,7 +1175,7 @@ app.post('/api/simulator', async(req, res) => {
     } catch (error) {
         res.send({'success': false});
     }
-})
+});
 
 app.get('/api/get-players', async(req, res) => {
     try {
@@ -990,7 +1183,7 @@ app.get('/api/get-players', async(req, res) => {
     } catch (error) {
         res.send({'success': false});
     }
-})
+});
 
 app.get('/api/colleges', async(req, res) => {
     try {
@@ -1084,7 +1277,7 @@ app.get('/api/logged-in', async(req, res) => {
     } catch (error) {
         return res.send({'success': false})
     }
-})
+});
 
 
 
@@ -1189,6 +1382,10 @@ app.get('/api/get-tournaments', async(req, res) => {
 
 app.post('/api/register-for-tournament', async(req, res) => {
     try {
+        if (maintenance_mode == true) {
+            return res.send({'success': false, 'error': 'Sorry, the server is under maintenance right now, please try again in a few minutes'});
+        }
+
         let user = jwt.verify(req.cookies.jwtToken, JWT_SECRET);
             
         if (user === null || user.profile_id === null) {

@@ -17,6 +17,21 @@
   gtag('config', 'G-0TJLDYVT91');
 </script>
 <body>
+    <div class="alert-screen">
+        <div class="add-player">
+            <button class="x-btn" onclick="addPlayerX();">✕</button>
+            <div class="players">
+            </div>
+            <script>
+                async function addPlayerX() {
+                    let ds = document.querySelector('.alert-screen .add-player .players');
+                    ds.innerHTML = '';
+                    document.querySelector('.alert-screen .add-player').classList.remove('show');
+                    document.querySelector('.alert-screen').classList.remove('show');
+                }
+            </script>
+        </div>
+    </div>
     <div class="main">
         <div class="menu">
             <div class="header">
@@ -745,6 +760,75 @@
         }
     }
 
+    async function addPlayerToTournament(pid, tournament_name) {
+        let r = await fetch('/admin/add-player-to-tournament', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pid: pid,
+                t_name: tournament_name
+            })
+        }).then(r => r.json());
+
+        if (r.success == true) {
+            for (let type in tournaments) {
+                for (t in tournaments[type]) {
+                    if (tournaments[type][t].name == currentViewTournament.name) {
+                        tournaments[type][t].players.push(pid);
+                        tournaments[type][t].num_players += 1;
+                        currentViewTournament = tournaments[type][t];
+                        await updateView('players');
+                        addPlayerX();
+                        return;
+                    }
+                }
+            }
+        } else {
+            alert(r.error);
+        }
+        addPlayerX();
+    }
+    
+    async function removePlayerFromTournament(pid, tournament_name) {
+        let r = await fetch('/admin/remove-player-from-tournament', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pid: pid,
+                t_name: tournament_name
+            })
+        }).then(r => r.json());
+
+        if (r.success == true) {
+            for (let type in tournaments) {
+                for (t in tournaments[type]) {
+                    if (tournaments[type][t].name == currentViewTournament.name) {
+                        let p_ind = -1;
+                        for (let p in tournaments[type][t].players) {
+                            if (tournaments[type][t].players[p] == pid) {
+                                p_ind = p;
+                                break;
+                            }
+                        }
+                        tournaments[type][t].players.splice(p_ind, 1);
+                        tournaments[type][t].num_players -= 1;
+                        currentViewTournament = tournaments[type][t];
+                        await updateView('players');
+                        addPlayerX();
+                        return;
+                    }
+                }
+            }
+        } else {
+            alert(r.error);
+        }
+        addPlayerX();
+    }
+
     // setupProfiles();
                         
     let tournaments = {};
@@ -824,7 +908,7 @@
 
     }
 
-    function updateView() {
+    function updateView(site=null) {
         let view = document.querySelector('.Tournaments .View');
         view.innerHTML = '';
 
@@ -863,23 +947,12 @@
         t_info.classList.add('header');
         t_info.style.marginTop = '0px';
 
-        let team_count = 0;
-        let player_count = 0;
-        for (let tm in tournaments.teams) {
-            if (tournaments.teams[tm].tournament == currentViewTournament.name) {
-                team_count += 1;
-                for (let p in tournaments.teams[tm].team_members) {
-                    if (tournaments.teams[tm].team_members[p].player == 1) {
-                        player_count += 1;
-                    }
-                }
-            }
-        }
+
         let team_count_h2 = document.createElement('h2');
-        team_count_h2.innerText = `${team_count} ${team_count == 1 ? "University" : "Universities"}`;
+        team_count_h2.innerText = `${currentViewTournament.num_teams} ${currentViewTournament.num_teams == 1 ? "University" : "Universities"}`;
         t_info.appendChild(team_count_h2)
         let player_count_h2 = document.createElement('h2');
-        player_count_h2.innerText = `${player_count} ${player_count == 1 ? "Player" : "Players"}`;
+        player_count_h2.innerText = `${currentViewTournament.num_players} ${currentViewTournament.num_players == 1 ? "Player" : "Players"}`;
         t_info.appendChild(player_count_h2)
 
         view.appendChild(t_info);
@@ -888,6 +961,7 @@
         let sites = document.createElement('div');
         sites.classList.add('sites');
         
+        // Teams
         let teams = document.createElement('button');
         teams.innerText = 'Teams';
         sites.appendChild(teams);
@@ -967,6 +1041,101 @@
             main.appendChild(tools);
         })
 
+        // Players
+        let players = document.createElement('button');
+        players.innerText = 'Players';
+        sites.appendChild(players)
+
+        player_count = 0;
+
+        players.addEventListener('click', (event) => {
+            document.querySelectorAll('.page .Tournaments .View .sites button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+
+            event.target.classList.add('selected');
+
+            let main = document.querySelector('.page .Tournaments .View .main-view');
+            main.innerHTML = '';
+
+            let players_div = document.createElement('div');
+            players_div.classList.add('players-div');
+
+            for (let p in profiles) {
+                if (currentViewTournament.players.includes(profiles[p].profile_id)) {
+                    let player = document.createElement('div');
+                    player.classList.add('team');
+                    let player_name = document.createElement('span');
+                    player_name.innerText = profiles[p].first_name + ' ' + profiles[p].last_name;
+                    player.appendChild(player_name);
+
+                    let options_div = document.createElement('div');
+                    options_div.classList.add('options');
+
+                    let remove = document.createElement('button');
+                    remove.classList.add('cancel');
+                    remove.innerText = 'Remove';
+
+                    remove.setAttribute('onclick', `removePlayerFromTournament(${profiles[p].profile_id}, "${currentViewTournament.name}")`);
+
+                    options_div.appendChild(remove);
+                    player.appendChild(options_div);
+
+                    players_div.appendChild(player);
+                    player_count += 1;
+                }
+            }
+
+            if (player_count == 0) {
+                let h1 = document.createElement('h1');
+                h1.innerText = 'No players';
+                players_div.appendChild(h1);
+            }
+
+            let tools = document.createElement('div');
+            tools.classList.add('tools');
+
+            // Add Players
+            let addPlayerBtn = document.createElement('button');
+            addPlayerBtn.classList.add('create')
+            addPlayerBtn.setAttribute('style', 'width: 2.5em; height: 2.5em;')
+            addPlayerBtn.innerText = '+';
+            
+            addPlayerBtn.addEventListener('click', async(event) => {
+                document.querySelector('.alert-screen').classList.add('show');
+                document.querySelector('.alert-screen .add-player').classList.add('show');
+
+                let ps_div = document.querySelector('.alert-screen .add-player .players');
+                let inner_ps = document.createElement('div');
+                inner_ps.classList.add('players');
+
+                let p_search = document.createElement('input');
+                p_search.setAttribute('placeholder', 'Search');
+                p_search.addEventListener('input', (event) => {
+                    event.target.parentElement.querySelector('.players').innerHTML = '';
+                    let s = event.target.value;
+                    for (let p in profiles) {
+                        let p_name = profiles[p].first_name + ' ' + profiles[p].last_name;
+                        if (p_name.toLocaleLowerCase().includes(s.toLocaleLowerCase())) {
+                            let player = document.createElement('button');
+                            player.classList.add('player');
+                            player.innerText = p_name;
+                            player.setAttribute('onclick', `addPlayerToTournament(${profiles[p].profile_id}, "${currentViewTournament.name}")`);
+                            inner_ps.appendChild(player);
+                        }
+                    }
+                })
+                ps_div.appendChild(p_search);
+                ps_div.appendChild(inner_ps);
+                p_search.dispatchEvent(new Event('input'));
+            })
+
+            tools.appendChild(addPlayerBtn);
+
+            main.appendChild(players_div);
+            main.appendChild(tools)
+        })
+
         view.appendChild(sites);
 
         let main_view = document.createElement('div');
@@ -974,7 +1143,13 @@
         
         view.appendChild(main_view);
 
-        teams.dispatchEvent(new Event('click'));
+        if (site == null) {
+            teams.dispatchEvent(new Event('click'));
+        } else if (site == 'players') {
+            players.dispatchEvent(new Event('click'));
+        } else {
+            teams.dispatchEvent(new Event('click'));
+        }
 
     }
 
@@ -1451,6 +1626,15 @@
                     let split = tournaments[type][i].registration_close.split('-');
                     tournaments[type][i].original_registration_close = tournaments[type][i].registration_close
                     tournaments[type][i].registration_close = months[split[1]] + ' ' + ((split[2].length == 2 && split[2].charAt(0) == '0') ? split[2].charAt(1) : split[2]) + ', ' + split[0];
+                }
+
+                if (tournaments[type][i].players == null) {
+                    tournaments[type][i].players = [];
+                } else {
+                    tournaments[type][i].players = tournaments[type][i].players.split(';;');
+                    for (let p in tournaments[type][i].players) {
+                        tournaments[type][i].players[p] = parseInt(tournaments[type][i].players[p]);
+                    }
                 }
                 
             }

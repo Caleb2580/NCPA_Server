@@ -210,6 +210,7 @@ CREATE TABLE TournamentTeamMember (
     captain BOOLEAN DEFAULT 0,
     player BOOLEAN DEFAULT 0,
     stripe_session_id VARCHAR(100),
+    refunded INT DEFAULT 0,
     FOREIGN KEY (profile_id) REFERENCES Profile(profile_id) ON DELETE CASCADE,
     FOREIGN KEY (tournament_team_id) REFERENCES TournamentTeam(tournament_team_id) ON DELETE CASCADE,
     FOREIGN KEY (tournament) REFERENCES Tournament(name) ON DELETE CASCADE,
