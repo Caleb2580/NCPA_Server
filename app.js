@@ -20,8 +20,8 @@ const saltRounds = 10;
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-let base_url = 'http://localhost:3000';
-// let base_url = 'https://tournaments.ncpaofficial.com'
+// let base_url = 'http://localhost:3000';
+let base_url = 'https://tournaments.ncpaofficial.com'
 
 let maintenance_mode = false;
 
